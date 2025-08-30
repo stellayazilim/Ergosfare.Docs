@@ -18,6 +18,8 @@ const withMDX = nextMDX({
 const nextConfig = {
   output: 'export',
   distDir: 'docs',
+  basePath: '/Ergosfare.Docs',
+  assetPrefix: '/Ergosfare.Docs/',
   pageExtensions: ['js', 'jsx', 'ts', 'tsx', 'mdx'],
   outputFileTracingIncludes: {
     '/**/*': ['./src/app/**/*.mdx'],
