@@ -32,9 +32,6 @@ jobs:
       - name: Build with Next.js
         run: bun run build
 
-      - name: Export static site
-        run: bunx next export   # produces ./out folder
-
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
