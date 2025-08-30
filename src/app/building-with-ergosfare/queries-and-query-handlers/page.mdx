@@ -1,0 +1,211 @@
+import { HeroPattern } from '@/components/HeroPattern'
+
+export const metadata = {
+  title: 'Quickstart',
+  description:
+    'This guide will help you set up your first Ergosfare project and start using the framework’s core features.',
+}
+
+export const sections = [
+  { title: 'What is a Query', id: 'what-is-a-query' },
+  { title: 'How to Create a Query' , id: 'how-to-create-a-query'},
+  { title: 'What is a Query Handler', id: 'what-is-a-query-handler'},
+  { title: 'How to Create a Query Handler' , id: 'how-to-create-a-query-handler'},
+  { title: "Registering Query Handlers" , id: 'registering-query-handlers'},
+  { title: "Dispatching a Query" , id: 'dispatching-a-query'},
+]
+
+<HeroPattern />
+
+
+## What is a Query {{ id: 'what-is-a-query' , level: 2 }}
+
+In Ergosfare, queries represent **read-only operations** — requests for information that do **not modify system state**.  
+They are used to retrieve, project, or transform data without causing side effects.
+
+
+### Key Characteristics of Queries {{ id: 'key-characteristics', level: 3, anchor: 'key-characteristics' }}
+
+- Queries are read-only: They never change the state of the system.  
+- Represent a question: A query models a request for information.  
+- Always return data: Queries are always coupled with a result type.  
+- Self-contained: Carry all necessary parameters to fetch the requested data.  
+- Immutable once created: Ensures the request remains consistent throughout execution.  
+- Decoupled from handlers: The query defines **what** to fetch, the handler defines **how** to fetch it.  
+
+
+### Key Concepts {{ id: 'key-concepts', level: 2 }}
+
+- Queries are messages: They encapsulate all input data needed to retrieve information.  
+- Only one type of query interface: `IQuery<TResult>`.  
+- Queries are decoupled from their execution: Handlers implement `IQueryHandler<TQuery, TResult>`.  
+- Polymorphism and generics: Queries can be derived or generic, supporting flexible read models.  
+
+
+## How to Create a Query {{ id: 'how-to-create-a-query' }}
+
+### Basic Query {{ id: 'basic-query', level: 2 }}
+
+The most basic query returns data of a specified type.
+
+- Implements `IQuery<TResult>`.  
+- Encapsulates criteria for retrieval.  
+- Handled by a `IQueryHandler<TQuery, TResult>`.  
+
+Example: Retrieve the mass of a star by ID.
+
+```cs {{ title: 'Query with a result'}}
+public class GetStarMassQuery : IQuery<double>
+{
+    public Guid StarId { get; set; }
+}
+```
+
+### Derived Query {{ id: 'derived-query', level: 2 }}
+
+A query that specializes a base query to add new filtering or criteria.
+
+* Supports polymorphism: a handler for the base query can also process derived queries.
+* Promotes reuse and specialization.
+
+Example: `GetStarByNameQuery` extends a more generic `GetStarQuery`.
+
+```cs {{ title: 'Derived Query'}} 
+public class GetStarQuery : IQuery<Star>
+{
+    public Guid Id { get; set; }
+}
+
+public class GetStarByNameQuery : GetStarQuery
+{
+    public string Name { get; set; }
+}
+```
+
+### Generic Query {{ id: 'generic-query', level: 2 }}
+
+A parameterized query that can retrieve multiple related types with a single handler.
+
+* Defines a reusable query pattern.
+* Handlers can process any type parameter satisfying the constraints.
+
+Example: Query different gravity models.
+
+```cs {{ title: 'Generic Query'}}
+public record GravityQuery<TGravity> : IQuery<TGravity> where TGravity : Gravity
+{
+    public Guid Id { get; init; }
+}
+```
+
+## What is a Query Handler {{  id: 'what-is-a-query-handler' , level: 2 }}
+
+A query handler is responsible for retrieving and returning data requested by a query.
+While a query describes **what information is needed**, the handler defines **how that information is fetched**.
+
+### Key Characteristics of Query Handlers {{ id: 'key-characteristics-of-query-handlers', level: 3, anchor: 'key-characteristics-of-query-handlers' }}
+
+* Processes queries: They execute retrieval logic based on query data.
+* Always return data: Query handlers are required to return a result.
+* Type-safe: Strongly typed to a specific query and result type.
+* Polymorphic: Handlers can process derived or generic queries when applicable.
+* Separation of concerns: Queries describe **what to retrieve**, handlers implement **how to retrieve**.
+
+### Example Concept
+
+* A `GetStarMassQueryHandler` processes `GetStarMassQuery` and returns a `double`.
+* If `GetStarByNameQuery` extends `GetStarQuery`, the same handler could process both via polymorphism.
+
+## How to Create a Query Handler
+
+Query handlers are created by implementing the `IQueryHandler<TQuery, TResult>` interface.
+
+### Query Handler Example
+
+```cs {{ title: 'Query Handler'}}
+public class GetStarMassQueryHandler : IQueryHandler<GetStarMassQuery, double>
+{
+    public Task<double> HandleAsync(GetStarMassQuery query, CancellationToken cancellationToken = default)
+    {
+        // Example: look up mass by query.StarId
+        return Task.FromResult(1.989e30); // Mass of the Sun in kg
+    }
+}
+```
+
+### Polymorphic Query Handlers
+
+Polymorphic query handlers allow a single handler to process related queries using inheritance or generics.
+
+#### Example: Generic handler for any gravity type
+
+```cs {{ title: 'GenericGravityQueryHandler'}}
+public class GravityQueryHandler<TGravity> : IQueryHandler<GravityQuery<TGravity>, TGravity>
+    where TGravity : Gravity, new()
+{
+    public Task<TGravity> HandleAsync(GravityQuery<TGravity> query, CancellationToken cancellationToken = default)
+    {
+        Console.WriteLine($"Retrieving gravity data for: {typeof(TGravity).Name}");
+        return Task.FromResult(new TGravity());
+    }
+}
+```
+
+<div className="not-prose mt-6 mb-16">
+    <>Learn how Ergosfare leverages contravariance, covariance, and polymorphism to let your query handlers work seamlessly with base and derived queries. </>
+    <Button href="/core-concepts/polymorphism" arrow="right" >
+        For more information see Polymorphism in Ergosfare
+    </Button>
+</div>
+
+
+
+
+
+
+## Registering Query Handlers {{ id: 'registering-query-handlers' , level: 2 }}
+
+Once you’ve created a query handler, you need to tell Ergosfare about it.
+Just like commands, you register queries through Microsoft.Extensions.DependencyInjection.
+
+
+To register query handlers, add the following packages to your project:
+
+- Stella.Ergosfare.Core.*
+
+- Stella.Ergosfare.Queries
+
+- Stella.Ergosfare.Queries.Abstractions
+
+- Stella.Ergosfare.Queries.Extensions.MicrosoftDependencyInjection
+
+Then, in your Program.cs or Startup.cs, register the query module and your handlers:
+
+```cs {{ title: 'program.cs'}}
+builder.Services.AddErgosfare(options =>
+{
+    options.AddQueryModule(module =>
+    {
+        // Register a single command manually
+        module.Register<GetOrdersCommand>();
+
+        // Or automatically register all query handlers in the current assembly
+        module.RegisterFromAssembly(Assembly.GetExecutingAssembly());
+    });
+});
+```
+
+
+## Dispatching a Query
+
+Once registered, queries can be dispatched using the `IQueryMediator`.
+The `IQueryMediator` ensures the correct query handler is invoked and returns the expected result.
+`IQueryMediator` is automatically available in DI when you add the QueryModule.
+
+```cs {{ title: 'Dispatching a query'}}
+var mediator = serviceProvider.GetRequiredService<IQueryMediator>();
+
+var planet = await mediator.Send(new GetPlanetByIdQuery(Guid.NewGuid()));
+Console.WriteLine($"Planet found: {planet?.Name}");
+```
+

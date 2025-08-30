@@ -1,0 +1,139 @@
+import { HeroPattern } from '@/components/HeroPattern'
+export const metadata = {
+  title: 'Configure Ergosfare',
+  description:
+    'Learn more about how the system is structured and the main building blocks.',
+}
+
+
+export const sections = [
+  { title: 'Polymorphism in Ergosfare ', id: 'polymorphism' },
+  { title: 'Generic type support' , id: 'generic-type-support' },
+]
+
+
+<HeroPattern />
+
+## Polymorphism in Ergosfare {{ id: 'polymorphism' }}
+All Ergosfare handlers support polymorphism through contravariance on input and covariance on output. This allows handlers to process messages and return results across an inheritance hierarchy, reducing duplication and increasing flexibility.
+
+
+
+### Polymorphism covariance contravariance example {{ id: 'polymorphism-example' }}
+```cs {{ title: 'Base command'}}
+public class StarCommand : ICommand
+{
+    public string Name { get; set; }
+}
+```
+```cs {{ title: 'Derived command: Sun'}}
+public class SunCommand : StarCommand
+{
+    public double Temperature { get; set; }
+}
+```
+```cs {{ title: 'Derived command: Sirius'}}
+public class SiriusCommand : StarCommand
+{
+    public string Constellation { get; set; }
+}
+```
+```cs {{ title: 'Handler for base command (all stars)'}}
+public class StarCommandHandler : ICommandHandler<StarCommand>
+{
+    public Task HandleAsync(StarCommand command, CancellationToken cancellationToken = default)
+    {
+        Console.WriteLine($"Creating a generic star: {command.Name}");
+        return Task.CompletedTask;
+    }
+}
+```
+```cs {{ title: 'Handler for Sun'}}
+public class SunCommandHandler : ICommandHandler<SunCommand>
+{
+    public Task HandleAsync(SunCommand command, CancellationToken cancellationToken = default)
+    {
+        Console.WriteLine($"Creating a sun: {command.Name}, Temperature: {command.Temperature}");
+        return Task.CompletedTask;
+    }
+}
+```
+```cs {{ title: 'Handler for Sirius'}}
+public class SiriusCommandHandler : ICommandHandler<SiriusCommand>
+{
+    public Task HandleAsync(SiriusCommand command, CancellationToken cancellationToken = default)
+    {
+        Console.WriteLine($"Creating Sirius in constellation: {command.Constellation}");
+        return Task.CompletedTask;
+    }
+}
+
+
+```
+### behavior
+
+- Sending a SunCommand resolves to SunCommandHandler, even if cast as StarCommand.
+
+- Sending a SiriusCommand resolves to SiriusCommandHandler, following the same rule.
+
+- If a derived command has no specific handler, the base handler (StarCommandHandler) is invoked.
+
+### Benefits
+
+- Supports polymorphic dispatch for hierarchical commands.
+
+- Base handlers can handle general cases while derived handlers provide specialized behavior.
+
+- Clean, type-safe structure for commands and handlers in Ergosfare.
+
+
+
+
+## Generic type support {{ id: 'generic-type-support' }}
+
+Ergosfare supports generic types as part of polymorphism, enabling reusable, type-safe handlers for families of related messages
+
+### Generic command example
+
+```cs {{ title: 'Gravity types'}}
+public class Gravity { }
+public class MassGravity: Gravity { }
+public class ArtificialGravity: Gravity { }
+```
+
+
+
+```cs {{ title: 'Generic command for any type of gravity'}}
+public record GravityCommand<TGravity> : ICommand where TGravity : Gravity
+{
+    public TGravity Gravity { get; init; }
+}
+```
+
+
+```cs {{ title: 'Specialized commands'}}
+public record MassGravityCommand : GravityCommand<MassGravity>;
+public record ArtificialGravityCommand : GravityCommand<ArtificialGravity>;
+```
+
+
+```cs {{ title: 'Generic handler'}}
+public class GravityCommandHandler<TGravity> : ICommandHandler<GravityCommand<TGravity>>
+{
+    public Task HandleAsync(GravityCommand<TGravity> command, CancellationToken cancellationToken = default)
+    {
+        Console.WriteLine($"Processing gravity command for: {typeof(TGravity).Name}");
+        return Task.CompletedTask;
+    }
+}
+```
+
+#### Behavior
+- A single generic handler `(GravityCommandHandler<TGravity>)` handles all gravity commands, whether MassGravityCommand or ArtificialGravityCommand.
+- Supports polymorphic dispatch if new gravity types are added later.
+` Reduces boilerplate and keeps your command pipeline clean and type-safe.
+
+#### Benefits
+- Reusability: One handler for multiple gravity types.
+- Extensibility: Add new gravity types without creating new handlers.
+- Consistency: Integrates seamlessly with Ergosfare’s pipeline and execution context.

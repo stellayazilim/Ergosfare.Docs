@@ -1,0 +1,164 @@
+
+import { HeroPattern } from '@/components/HeroPattern'
+
+export const metadata = {
+  title: 'Exception Interceptors',
+  description:
+    'This guide will help you set up exception interceptors in Ergosfare infrastructure and handle errors consistently across modules.',
+}
+
+export const sections = [
+    { title: 'Exception Interceptors in Ergosfare', id: 'what-is-an-exception-interceptor'},
+    { title: 'Core Concepts', id: 'core-concepts'},
+    { title: 'Module-Specific Exception Interceptor Interfaces', id: 'module-specific-exception-interceptor-interfaces'},
+    { title: 'Examples', id: 'examples'},
+    { title: 'Registering Exception Interceptors', id: 'registering-exception-interceptors'},
+]
+
+<HeroPattern />
+
+## Exception Interceptors in Ergosfare {{ id:'what-is-an-exception-interceptor' , level: 2}}
+
+Exception interceptors are invoked when a command, query, or event handler throws an unhandled exception.  
+They act as **safety nets** that let you log, transform, or react to errors before they escape the pipeline.  
+
+Think of them as **shock absorbers** in your system: they prevent unhandled exceptions from propagating unchecked and allow you to apply uniform error handling strategies such as logging, wrapping exceptions, retry scheduling, or user-friendly messaging.
+
+
+
+## Core Concepts {{ id: 'core-concepts' , level: 2}}
+
+At the foundation of exception handling, Ergosfare provides a core interface:
+
+```cs {{title: 'CoreModule Exception Interceptor Interface'}}
+
+public interface IAsyncExceptionInterceptor<TMessage>
+{
+    Task HandleAsync(
+        TMessage message,
+        Exception exception,
+        IExecutionContext context,
+        CancellationToken cancellationToken = default);
+}
+
+```
+
+
+```cs {{ title: 'CoreModule Exception Interceptor Example'}}
+public class LoggingExceptionInterceptor<TMessage> : IAsyncExceptionInterceptor<TMessage>
+{
+    public Task HandleAsync(
+        TMessage message,
+        object? result,
+        Exception exception,
+        IExecutionContext context,
+        CancellationToken cancellationToken = default)
+    {
+        Console.WriteLine($"Exception in {typeof(TMessage).Name}: {exception.Message}");
+        return Task.CompletedTask;
+    }
+}
+```
+
+* `TMessage` is the message type (Command, Query, or Event).
+* `exception` is the unhandled exception thrown by the handler or any interceptor.
+* `IExecutionContext` provides contextual information like tenant, user identity, correlation IDs.
+
+<Note>
+Core exception interceptors are only the foundation. To integrate properly into modules, you will usually use **module-specific exception interceptor interfaces** described below.
+</Note>
+
+
+## Module-Specific Exception Interceptor Interfaces {{ id: 'module-specific-exception-interceptor-interfaces' , level: 2}}
+
+Each module provides its own dedicated exception interceptor interfaces that extend the core:
+
+| Module  | Non-Generic Interface          | Generic Interface                        |
+| ------- | ------------------------------ | ---------------------------------------- |
+| Command | `ICommandExceptionInterceptor` | `ICommandExceptionInterceptor<TCommand>` |
+| Query   | `IQueryExceptionInterceptor`   | `IQueryExceptionInterceptor<TQuery>`     |
+| Event   | `IEventExceptionInterceptor`   | `IEventExceptionInterceptor<TEvent>`     |
+
+### Key Notes
+
+* **Non-generic** interceptors run for all messages within a module (e.g., all commands).
+* **Generic** interceptors target specific types (e.g., one command or query).
+* Using module-specific interfaces ensures automatic discovery and registration within the module.
+
+
+
+## Examples {{ id: 'examples' , level: 2}}
+
+### Module-Specific Exception Interceptor (Command)
+
+```cs {{title: "command exception interceptor"}}
+public class LoggingCommandExceptionInterceptor<TCommand> 
+    : ICommandExceptionInterceptor<TCommand>
+{
+    public Task HandleAsync(
+        TCommand command,
+        object? result,
+        Exception exception,
+        IExecutionContext context,
+        CancellationToken cancellationToken = default)
+    {
+        Console.WriteLine(
+            $"Command {typeof(TCommand).Name} failed with: {exception.Message}");
+        return Task.CompletedTask;
+    }
+}
+```
+
+* Only applies to the Command module.
+* Runs when a command handler or interceptor throws an exception.
+
+
+### Non-Generic Exception Interceptor (All Commands)
+
+```cs {{title: "non-generic command exception interceptor"}}
+public class GlobalCommandExceptionInterceptor 
+    : ICommandExceptionInterceptor
+{
+    public Task HandleAsync(
+        ICommand command,
+        object? result,
+        Exception exception,
+        IExecutionContext context,
+        CancellationToken cancellationToken = default)
+    {
+        Console.WriteLine(
+            $"[Global] Command {command.GetType().Name} failed: {exception.SourceException.Message}");
+        return Task.CompletedTask;
+    }
+}
+```
+
+* Handles **all commands** uniformly.
+* Useful for global concerns like telemetry, error monitoring, or standardized wrapping.
+
+
+
+## Registering Exception Interceptors {{ id: 'registering-exception-interceptors' , level: 2}}
+
+Exception interceptors are registered **the same way as handlers and any other interceptors**, using the `Register<T>()` method.
+
+```cs {{ title: 'registering exception interceptor'}}
+
+builder.Services.AddErgosfare(options =>
+{
+    options.AddCommandModule(module =>
+    {
+        // Register a module-specific exception interceptor
+        module.Register<LoggingCommandExceptionInterceptor<CreateStarCommand>>();
+
+        // Automatically register all interceptors and handlers in the assembly
+        module.RegisterFromAssembly(Assembly.GetExecutingAssembly());
+    });
+});
+```
+
+* Any type implementing `ICommandExceptionInterceptor<T>`, `IQueryExceptionInterceptor<T>`, or `IEventExceptionInterceptor<T>` is automatically wired into its module’s pipeline.
+* No extra registration steps are required beyond `Register<T>()` or `RegisterFromAssembly()`.
+
+With exception interceptors, you gain a **centralized and extensible mechanism** to handle failures consistently across your Ergosfare-powered system.
+

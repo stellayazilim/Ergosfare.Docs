@@ -1,0 +1,93 @@
+import { HeroPattern } from '@/components/HeroPattern'
+export const metadata = {
+  title: 'Configure Ergosfare',
+  description:
+    'Learn more about how the system is structured and the main building blocks.',
+}
+
+
+export const sections = [
+  { title: 'Basic configuration', id: 'basic-configuration' },
+  { title: 'IModule Builder Methods ' , id: 'imodule-builder-methods' },
+]
+
+
+<HeroPattern />
+
+## Basic configurations {{ id: 'basic-configuration' }}
+
+The Basic Configurations section demonstrates how to set up Ergosfare modules and register your handlers using dependency injection.
+
+
+In this example, the AddErgosfare extension method is used to configure the framework and enable the Command, Query, and Event modules. Each module is configured via a builder of type IModuleBuilder, which provides methods for registering handlers from assemblies, configuring pipelines, or adding custom behavior.
+
+
+```cs
+
+services.AddErgosfare(options =>
+{
+    
+    options.AddCommandModule(
+        builder => builder
+            .RegisterFromAssembly(Assembly.GetExecutingAssembly();
+    );
+    options.AddQueryModule(
+        builder => builder.RegisterFromAssembly(Assembly.GetExecutingAssembly())
+    );
+    options.AddEventModule(
+        builder => builder.RegisterFromAssembly(Assembly.GetExecutingAssembly())
+    );
+});
+
+```
+
+
+
+### Key points: {{id: 'key-points'}}
+
+- options.AddCommandModule(...) → Registers the Command module and its handlers.
+
+- options.AddQueryModule(...) → Registers the Query module and its handlers.
+
+- options.AddEventModule(...) → Registers the Event module and its handlers.
+
+- builder.RegisterFromAssembly(Assembly.GetExecutingAssembly()) → Automatically discovers and registers all handlers (commands, queries, or events) from the specified assembly.
+## IModule Builder Methods {{id: 'imodule-builder-methods'}}
+
+The IModuleBuilder interface provides several methods to register handlers in a module, giving you flexible options for wiring up commands, queries, and events.
+
+### `Register<T>()`
+Registers a single handler by its generic type.
+
+```cs
+ builder => builder.Register<MyCommandHandler>();
+```
+
+- T must implement the appropriate handler interface such as `ICommandHandler<T>`, `IAsyncQueryHandler<T,R>`, `IEventHandler<T>`, etc.
+- Useful for registering individual handlers explicitly.
+
+
+### `Register(Type type)`
+
+Registers a handler by providing a Type instance.
+
+```cs
+ builder => builder.Register(typeof(MyCommandHandler));
+```
+
+- Allows dynamic registration when the handler type is determined at runtime.
+- Works with any type that implements a valid handler interface.
+
+### `RegisterFromAssembly(Assembly assembly)`
+
+Automatically discovers and registers all handlers from a given assembly.
+
+```cs
+ builder => builder.RegisterFromAssembly(Assembly.GetExecutingAssembly());
+```
+
+- Scans the specified assembly for all classes implementing handler interfaces.
+- Saves time and reduces boilerplate by batch-registering multiple handlers at once.
+
+
+By understanding and using these methods, you can control how and where handlers are registered, whether you prefer explicit single registrations or assembly-wide automatic discovery.

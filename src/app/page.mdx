@@ -1,0 +1,42 @@
+import { Guides, KeyCharacteristics } from '@/components/Guides'
+import { Characteristic } from '@/components/Resources'
+import { HeroPattern } from '@/components/HeroPattern'
+
+export const metadata = {
+  title: 'API Documentation',
+  description:
+    'Learn everything there is to know about the Ergosfare API and integrate Ergosfare into your product.',
+}
+
+export const sections = [
+  { title: 'Why Ergosfare?', id: 'Why Ergosfare?' },
+  { title: 'Key Characteristics', id: 'Key Characteristics' },
+  { title: 'Getting started', id: 'Getting started' }
+]
+
+
+<HeroPattern />
+
+
+## Why Ergosfare? {{id: 'Why Ergosfare?' }}
+In the fast-paced world of software development, building scalable and maintainable applications can be a complex challenge. Ergosfare was created to simplify this process, offering a framework that balances structure with flexibility. At its heart, Ergosfare empowers developers to focus on what truly matters: delivering robust business logic, without getting lost in repetitive boilerplate code.
+
+Ergosfare embraces an event-driven architecture, seamlessly integrating commands, queries, and events into a coherent workflow. Its modular design allows teams to extend functionality easily, ensuring that applications remain adaptable as requirements evolve. Features like dependency injection, event interception, and streamlined messaging are built-in, providing a solid foundation for both small projects and enterprise-scale systems.
+
+More than just a framework, Ergosfare represents a philosophy: simplifying complexity while keeping developers in control. It’s designed to accelerate development, improve code quality, and empower teams to build software that’s resilient, maintainable, and future-ready. {{ className: 'lead' }}
+
+
+<KeyCharacteristics />
+
+## Getting started {{id: 'Getting started'}}
+
+Getting started with Ergosfare is simple. Set up a new project, explore the core modules, and begin building your application using the framework’s event-driven architecture. For a step-by-step guide, see the Quickstart
+ section to get your first integration up and running in minutes.
+<div className="not-prose mt-6 mb-16 flex gap-3">
+  <Button href="/quickstart" arrow="right">
+    </Button>
+    <>Quickstart</>
+ 
+</div>
+
+<Guides />

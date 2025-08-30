@@ -1,0 +1,33 @@
+
+### Interceptors
+
+Interceptors are **pipeline components** in Ergosfare that allow you to **observe, modify, or even halt the execution** of commands, queries, and events before they reach their respective handlers. They act as **intermediary fields** in the flow of messages—like gravity wells or shields—that can influence or redirect the trajectory of your operations.
+
+Interceptors are **intended for cross-cutting concerns** that span multiple handlers or modules, without polluting your core business logic. Common uses include:
+
+* **Logging & Telemetry:** Track message flow, execution times, and diagnostics.
+* **Validation & Authorization:** Ensure messages meet preconditions before processing.
+* **Context Propagation:** Share or modify execution context values like tenant IDs, correlation IDs, or user identity.
+* **Error Handling & Recovery:** Catch exceptions, retry operations, or transform errors into meaningful responses.
+* **Pipeline Control:** Abort execution early with `ExecutionContext.Abort()` or modify message properties dynamically.
+
+#### Types of Interceptors
+
+Ergosfare supports different interception points depending on the message type:
+
+* **Pre-Execution Interceptors:** Run **before** the handler executes; ideal for validation, logging, or modifying the message.
+* **Post-Execution Interceptors:** Run **after** the handler completes; useful for auditing, result transformation, or side-effects.
+* **Exception Interceptors:** Triggered when the handler throws an exception; perfect for centralized error handling or retries.
+
+Interceptors integrate seamlessly with the **execution context**, giving you full control over the **lifecycle and flow** of commands, queries, and events. By centralizing these behaviors, your handlers remain focused purely on **business logic**, while cross-cutting concerns are cleanly isolated.
+
+For a deeper dive and full code examples, see the dedicated guide:
+
+
+<div className="not-prose mt-6 mb-16 flex gap-3">
+    <Button href="/guides/interceptors" arrow="right">
+        Learn more about Interceptors
+    </Button>
+   
+</div>
+

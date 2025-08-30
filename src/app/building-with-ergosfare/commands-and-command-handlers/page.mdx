@@ -1,0 +1,334 @@
+import { HeroPattern } from '@/components/HeroPattern'
+
+export const metadata = {
+  title: 'Quickstart',
+  description:
+    'his guide will help you set up your first Ergosfare project and start using the framework’s core features.',
+}
+
+
+export const sections = [
+  { title: 'What is a Command', id: 'what-is-a-Command' },
+  { title: 'How to Create a Command' , id: 'how-to-create-a-command' },
+  { title: 'What is a Command Handler', id: 'what-is-a-command-handler' },
+  { title: 'How to Create a Command Handler' , id: 'how-to-create-a-command-handler'},
+  { title: "Registering Command Handlers" , id: 'registering-command-handlers'},
+  { title: "Dispatching a Command" , id: 'dispatching-a-command'},
+]
+
+
+<HeroPattern />
+
+
+## What is a Command {{  id: 'what-is-a-Command' , level: 2 }}
+
+In Ergosfare, commands represent intent-driven operations — actions that change the state of your system. Commands are the starting point for workflows that perform tasks, trigger side effects, or produce results.
+
+
+### Key Characteristics of Commands {{ id: 'key-characteristics', level: 3, anchor: 'key-characteristics' }}
+
+- Commands are always intended to change the state of the system.
+- Represents Intent or Action, A command models  a request to perform a specific operation.
+- It expresses what should happen, not how.
+- Commands carry all the information required to perform the action.
+- They act as a self-contained message or instruction.
+- Commands are typically immutable once created, ensuring the action’s intent cannot change mid-flight.  (Ergosfare still have ability to modify commands)
+- Single Responsibility: Each command represents one discrete operation, Avoid bundling multiple unrelated actions into a single command.
+
+
+### Key Concepts {{ id: 'key-concepts', level: 2 }}
+
+- Commands are messages: They encapsulate all information needed to perform an action.
+- Two types of commands:
+    - `ICommand;` Commands without return values (fire-and-forget).
+    - `ICommand<TResult>;` Commands with return values (request-response).
+- Commands are decoupled from handlers: Handlers implement `ICommandHandler<TCommand>` or `ICommandHandler<TCommand, TResult>` depending on whether the command produces a result.
+- Polymorphism and generics: Commands can be derived from base commands or use generic parameters, enabling flexible and reusable workflows.
+
+## How to Create a Command {{ id: 'how-to-create-a-command' }}
+
+
+### Command without a result {{ id: 'command-without-a-result', level: 2 }}
+
+
+A basic command that performs an action but does not return any value.
+
+- Implements ICommand.
+
+- Encapsulates all information needed to perform the action.
+
+- Handled by a handler implementing `ICommandHandler<TCommand>`.
+
+Example: CreateMassCommand represents creating a mass without returning an ID or result.
+
+```cs {{ title: 'Command without a result'}}
+
+public class CreateMassCommand: ICommand
+{
+    public string Name { get; set; }
+}
+```
+
+### Command with a result {{ id: 'command-with-a-result', level: 2  }}
+
+A command that produces a result after execution.
+
+- Implements `ICommand<TResult>`.
+
+- The type parameter TResult specifies the result type returned by the handler.
+
+- Handled by a handler implementing `ICommandHandler<TCommand, TResult>`.
+
+Example: `CreateMassCommand : ICommand<Guid>` returns a GUID of the created mass.
+
+```cs {{ title: 'Command with a result' }}
+
+public class CreateMassCommand : ICommand<Guid>
+{
+    public string Name { get; set; }
+}
+
+```
+
+
+### Derived Command {{ id: 'derived-command',  level: 2   }}
+
+A command that inherits from a base command, adding additional properties or behavior.
+
+- Supports polymorphism: handlers for the base command can handle the derived command unless a specific handler exists.
+
+- Enables code reuse and specialization without duplicating logic.
+
+Example: `CreatePlanetCommand` extends `CreateMassCommand` by adding an `OrbitRadius` property.
+```cs {{ title: 'Derived Command' }} 
+
+public class CreatePlanetCommand : CreateMassCommand
+{
+    public int OrbitRadius { get; set; }
+}
+
+```
+
+
+### Generic Command {{ id: 'generic-command',  level: 2   }}
+
+A parameterized command that can handle multiple related types with a single handler.
+
+
+- Uses generics to define a type-safe, reusable command structure.
+
+- Integrates with handlers implementing `ICommandHandler<GravityCommand<TGravity>>`.
+
+- Supports generic polymorphism, so new gravity types automatically work with the same handler.
+
+Example: `GravityCommand<TGravity>` can represent MassGravityCommand or ArtificialGravityCommand without creating separate handlers for each.
+```cs {{ title: 'Generic Command'}}
+public record GravityCommand<TGravity> : ICommand where TGravity : Gravity
+{
+    public TGravity Gravity { get; init; }
+}
+```
+
+
+
+## What is a Command Handler {{  id: 'what-is-a-command-handler' , level: 2 }}
+
+
+A command handler is a dedicated component responsible for executing the logic associated with a command. 
+While a command represents the intent to perform an action, the command handler defines how that action is carried out. 
+This separation ensures a clean distinction between the data describing the operation and the logic that executes it.
+
+### Key Characteristics of Command Handlers {{ id: 'key-characteristics-of-command-handlers', level: 3, anchor: 'key-characteristics-of-command-handlers' }}
+
+
+- Processes commands: Command handlers receive commands and perform the corresponding state-changing operations.
+
+- Type-specific: Handlers are strongly typed to a specific command (or base/derived command), ensuring type-safe execution.
+
+- Supports polymorphism: Handlers can process derived commands when designed for a base type, enabling code reuse and flexible dispatching.
+
+- Decoupled from command creation: Handlers focus purely on execution, leaving commands as immutable carriers of intent.
+
+- Optional result handling: For commands that produce a result, handlers implement interfaces that return the corresponding type.
+
+
+### Example Concept
+
+- A CreateFileCommandHandler processes a CreateFileCommand by implementing the necessary logic to create a file.
+- If a derived command like CreateImageCommand exists, a specialized handler can override the base logic or provide additional behavior.
+
+In essence: A command handler is the executor of commands, translating the intent expressed in a command into actual system changes, while maintaining clean separation and type safety.
+
+
+
+
+## How to Create a Command Handler
+
+Command handlers are responsible for executing the logic associated with a command. When creating a handler, you implement the appropriate interface based on whether your command produces a result or not.
+
+### Key Points
+
+- Handlers are type-specific: Each handler is strongly typed to the command it handles.
+
+- Separation of concerns: The command carries data; the handler contains execution logic.
+
+- Supports polymorphism: Handlers can process derived commands if the interface is contravariant.
+
+- Optional results: Use a result-typed interface for commands that return a value.
+
+
+### Command Handler that does not return a result
+
+This kind of handler must implement the `ICommandHandler<TCommand>` interface.
+
+
+```cs {{ title: 'Command Handler without a result' }}
+
+public class CreateStarCommandHandler : ICommandHandler<CreateStarCommand>
+{
+    public Task HandleAsync(CreateStarCommand command, CancellationToken cancellationToken = default)
+    {
+        Console.WriteLine($"Creating star: {command.Name}");
+        return Task.CompletedTask;
+    }
+}
+
+```
+
+#### Behavior:
+
+- Processes commands in a fire-and-forget style.
+- Can handle CreateStarCommand and any derived commands (e.g., CreateRedGiantCommand) due to contravariance.
+
+
+### Command Handler that returns a result
+
+If the handler returns a result, it must implement the `ICommandHandler<TCommand, TResult>` interface.
+
+```cs {{ title: 'Command Handler with a result' }}
+
+public class CreateStarWithIdCommandHandler : ICommandHandler<CreateStarWithIdCommand, Guid>
+{
+    public Task<Guid> HandleAsync(CreateStarWithIdCommand command, CancellationToken cancellationToken = default)
+    {
+        var id = Guid.NewGuid();
+        Console.WriteLine($"Creating star {command.Name} with ID {id}");
+        return Task.FromResult(id);
+    }
+}
+
+```
+
+#### Behavior:
+- Processes commands and returns a result (e.g., the ID of the created star).
+- Can handle CreateStarWithIdCommand and any derived commands due to contravariance. even if CreateStarWithIdCommand casted its base type.
+
+
+
+### Polymorphic Command Handlers
+Polymorphic command handlers are handlers that can process multiple related commands through inheritance or generics, enabling flexible, reusable, and type-safe workflows.
+
+
+#### Key Concepts
+
+- Generic and base-type support: A single handler can handle any command derived from a base type or parameterized generic commands.
+
+- Contravariant input: Handlers for a base command type can process derived commands automatically.
+
+- Covariant result (if applicable): Handlers returning a result can provide derived result types that satisfy expectations for base result types.
+
+- Reduced duplication: One polymorphic handler replaces multiple specialized handlers, while still supporting specialized behavior when needed.
+
+- Type safety: Even with polymorphism, the compiler ensures that handlers only process compatible command types.
+
+
+#### Example Concept
+
+- A `GravityCommandHandler<TGravity>` can handle `GravityCommand<MassGravity>` and `GravityCommand<ArtificialGravity>` using the same code.
+
+- Adding a new type like BlackHoleGravity requires no new handler — the existing generic handler handles it automatically.
+
+
+```cs {{ title: 'Gravity types' }}
+
+public class Gravity { }
+public class MassGravity : Gravity { }
+public class ArtificialGravity : Gravity { }
+
+```
+
+
+```cs {{ title: 'Generic command for any type of gravity' }}
+
+public record GravityCommand<TGravity> : ICommand where TGravity : Gravity
+{
+    public TGravity Gravity { get; init; }
+}
+
+```
+
+so we can create a single generic handler to handle all types of `GravityCommand<TGravity>`:
+```cs {{ title: 'GenericGravityCommandHandler' }}
+
+public class GravityCommandHandler<TGravity> : ICommandHandler<GravityCommand<TGravity>>
+    where TGravity : Gravity
+{
+    public Task HandleAsync(GravityCommand<TGravity> command, CancellationToken cancellationToken = default)
+    {
+        Console.WriteLine($"Processing gravity command for type: {typeof(TGravity).Name}");
+        return Task.CompletedTask;
+    }
+}
+```
+
+<div className="not-prose mt-6 mb-16">
+    <>Learn how Ergosfare leverages contravariance, covariance, and polymorphism to let your handlers work seamlessly with base and derived commands. For more information look at </>
+    <Button href="/core-concepts/polymorphism" arrow="right" >
+        polymorphism in Ergosfare
+    </Button>
+</div>
+
+
+
+## Registering Command Handlers {{ id: 'registering-command-handlers' , level: 2 }}
+
+Once you’ve created a command handler, you need to tell Ergosfare about it.
+Ergosfare integrates with Microsoft.Extensions.DependencyInjection, so you simply register your handlers when configuring your services.
+
+To register command handlers to Ergosfare, whithin `Stella.Ergosfare.Core.*`  you need to add  `Stella.Ergosfare.Commands`, `Stella.Ergosfare.Commands.Abstractions` and `Stella.Ergosfare.Commands.Extensions.MicrosoftDependencyInjection` packages to your project.
+
+Then, in your `Program.cs` or `Startup.cs`, you can register the command module and your handlers like this:
+
+```cs {{title: "Program.cs"}}
+
+builder.Services.AddErgosfare(options =>
+{
+    options.AddCommandModule(module =>
+    {
+        // Register a single command manually
+        module.Register<CreateOrderCommand>();
+
+        // Or automatically register all command handlers in the current assembly
+        module.RegisterFromAssembly(Assembly.GetExecutingAssembly());
+    });
+});
+
+```
+
+
+## Dispatching a Command {{ id: 'dispatching-a-command' , level: 2 }}
+
+Once your handlers are registered, you can dispatch commands using the `ICommandMediator`.
+The `ICommandMediator` ensures the correct handler is resolved and invoked. 
+
+ICommandMediator is automatically registered in the DI container when you add `CommandModule`, so you can inject it into your services or controllers.
+
+```cs {{ title: 'Dispatching a command' }}
+
+var mediator = serviceProvider.GetRequiredService<IMediator>();
+
+var result = await mediator.Send(new CalculateTrajectoryCommand("Apollo"));
+Console.WriteLine($"Trajectory calculated: {result}");
+
+```
+

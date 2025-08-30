@@ -1,0 +1,151 @@
+
+import { HeroPattern } from '@/components/HeroPattern'
+
+export const metadata = {
+  title: 'Pre-Interceptors',
+  description:
+    'This guide will help you set up pre interceptors in Ergosfare infrastructure and start building cross-cutting concerns.',
+}
+
+export const sections = [
+    { title: 'Pre-Interceptors in Ergosfare', id: 'what-is-a-pre-interceptor'},
+    { title: 'Core Concepts', id: 'core-concepts'},
+    { title: 'Module-Specific Pre-Interceptor Interfaces', id: 'module-specific-pre-interceptor-interfaces'},
+    { title: 'Examples', id: 'examples'},
+    { title: 'Registering Pre-Interceptors', id: 'registering-pre-interceptors'},
+
+]
+
+<HeroPattern />
+
+## Pre-Interceptors in Ergosfare {{ id:'what-is-a-pre-interceptor' , level: 2}}
+
+Pre-interceptors allow you to observe, modify, or halt the execution of commands, queries, and events before they reach their handlers. Think of them as gravitational fields or shields that influence the trajectory of messages in your system. They are ideal for cross-cutting concerns like logging, validation, authorization, or context enrichment.
+
+## Core Concepts {{ id: 'core-concepts' , level: 2}}
+
+Ergosfare defines a core interface for pre-interceptors, which is the foundation for all modules:
+
+```cs {{title: "CoreModule Pre-Interceptor Interface definition"}}
+
+public interface IAsyncPreInterceptor<TMessage>
+{
+    Task HandleAsync(TMessage message, IExecutionContext context, CancellationToken cancellationToken = default);
+}
+
+```
+
+```cs {{ title: 'CoreModule Pre-Interceptor Example'}}
+
+public class LoggingInterceptor<TMessage> : IAsyncPreInterceptor<TMessage>
+{
+    public Task HandleAsync(TMessage message, IExecutionContext context, CancellationToken cancellationToken = default)
+    {
+        Console.WriteLine($"Processing message: {typeof(TMessage).Name}");
+        return Task.CompletedTask;
+    }
+}
+
+```
+- TMessage represents the type of message (Command, Query, or Event).
+
+- IExecutionContext provides contextual information (tenant, user identity, correlation IDs,).
+
+<Note>
+    this is demostration only, you cant register core module interfaces on any higher level module without module marker interfaces
+</Note>
+<Note>
+    Core module interfaces supposed to be foundation of higher level module-specific interfaces. Most of the time you will use module-specific interfaces below.
+</Note>
+
+
+
+## Module-Specific Pre-Interceptor Interfaces {{ id: 'module-specific-pre-interceptor-interfaces' , level: 2}}
+
+Each module has dedicated pre-interceptor interfaces:
+
+| Module  | Non-Generic Interface    | Generic Interface                  |
+| ------- | ------------------------ | ---------------------------------- |
+| Command | `ICommandPreInterceptor` | `ICommandPreInterceptor<TCommand>` |
+| Query   | `IQueryPreInterceptor`   | `IQueryPreInterceptor<TQuery>`     |
+| Event   | `IEventPreInterceptor`   | `IEventPreInterceptor<TEvent>`     |
+
+
+#### Key Notes:
+
+- Non-generic interfaces are useful for interceptors that should run for all messages in a module.
+
+- Generic interfaces allow type-specific interception, e.g., only for a certain command or event.
+
+- Module-specific interfaces are used for automatic registration within a module.
+
+
+
+
+## Examples {{ id: 'examples' , level: 2}}
+
+### Module-Specific Pre-Interceptor (Command)
+
+```cs {{title: "command pre-interceptor"}}
+public class LoggingPreInterceptor<TCommand> 
+    : ICommandPreInterceptor<TCommand>
+{
+    public Task HandleAsync(TCommand command, IExecutionContext context, Func<Task> next)
+    {
+        Console.WriteLine($"Processing command: {typeof(TCommand).Name}");
+        return next();
+    }
+}
+
+```
+
+
+- Only applies to the Command module.
+
+- Handles any command type due to contravariance.
+
+
+
+#### Non-Generic Pre-Interceptor (All Commands)
+
+```cs {{title: "non-generic command pre-interceptor"}}
+public class GlobalCommandInterceptor : ICommandPreInterceptor
+{
+    public Task HandleAsync(ICommand command, IExecutionContext context, Func<Task> next)
+    {
+        Console.WriteLine($"Intercepting command: {command.GetType().Name}");
+        return next();
+    }
+}
+```
+
+- Runs for all commands, regardless of their type.
+
+- No generic type parameter is needed.
+
+
+
+
+## Registering Pre-Interceptors {{ id: 'registering-pre-interceptors' , level: 2}}
+Interceptors are registered using the same `Register<T>()` method as handlers. No extra method is required.
+
+```cs {{ title: 'registering module-specific pre-interceptor'}}
+    builder.Services.AddErgosfare(options =>
+{
+    options.AddCommandModule(module =>
+    {
+        // Register a single module-specific pre-interceptor
+        module.Register<LoggingPreInterceptor<CreateStarCommand>>();
+
+        // Automatically register all interceptors beside handlers in the assembly
+        module.RegisterFromAssembly(Assembly.GetExecutingAssembly());
+    });
+});
+
+```
+
+
+- Pre-interceptors that implement `ICommandPreInterceptor<T>` or `ICommandPreInterceptor` are applied to the command pipeline.
+
+
+

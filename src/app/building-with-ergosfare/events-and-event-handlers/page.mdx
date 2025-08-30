@@ -1,0 +1,165 @@
+
+import { HeroPattern } from '@/components/HeroPattern'
+
+export const metadata = {
+  title: 'Quickstart - Events',
+  description:
+    'This guide will help you set up events in Ergosfare and start building event-driven workflows.',
+}
+
+export const sections = [
+  { title: 'What is an Event', id: 'what-is-an-event', links:[{ title: "Key Characteristics of Events ", id:  'key-characteristics'}] },
+  { title: 'How to Create an Event' , id: 'how-to-create-an-event'},
+  { title: 'What is an Event Handler', id: 'what-is-an-event-handler', links:[{ title: "Key Characteristics of Event Handlers ", id:  'key-characteristics-of-event-handlers'}] },
+  { title: 'How to Create an Event Handler' , id: 'how-to-create-an-event-handler'},
+  { title: "Registering Event Handlers" , id: 'registering-event-handlers'},
+  { title: "Dispatching an Event" , id: 'dispatching-an-event'},
+]
+
+<HeroPattern />
+
+
+## What is an Event {{ id: 'what-is-an-event' , level: 2 }}
+
+In Ergosfare, **events represent something that has happened** in your system.  
+Unlike commands (which express intent to change state), events are **facts**: they describe state changes that already occurred.  
+
+Events are commonly used to notify other parts of the system or external services that something has happened.
+
+### Key Characteristics of Events {{ id: 'key-characteristics', level: 3, anchor: 'key-characteristics' }}
+
+- Events represent **something that already happened**, not an intent.
+- They are immutable once published — you cannot change history.
+- Events can have **multiple subscribers** (unlike commands which have exactly one handler).
+- They decouple producers from consumers: the producer doesn’t know (or care) who listens.
+- Events can be **explicitly defined** by implementing `IEvent`.
+- Alternatively, you can use **plain POCO/POJO events** — Ergosfare allows domain events that don’t depend on Ergosfare abstractions at all.
+
+
+## How to Create an Event {{ id: 'how-to-create-an-event' }}
+
+Creating an event is straightforward. You have two options:
+
+### Defining an event with `IEvent`
+
+```cs {{ title: 'Defining an event with IEvent' }}
+public class StarExplodedEvent : IEvent
+{
+    public string Name { get; }
+    public DateTime OccurredAt { get; }
+
+    public StarExplodedEvent(string name, DateTime occurredAt)
+    {
+        Name = name;
+        OccurredAt = occurredAt;
+    }
+}
+```
+
+### Using a plain POCO/POJO as an event
+
+```cs {{ title: 'Plain event without IEvent'}}
+public class BlackHoleFormed
+{
+    public string Galaxy { get; set; }
+    public DateTime OccurredAt { get; set; }
+}
+```
+
+👉 Both approaches work in Ergosfare.
+
+* Use `IEvent` for **explicit framework integration**.
+* Use POCO/POJO events when modeling **pure domain events** without referencing Ergosfare.
+
+## What is an Event Handler {{ id: 'what-is-an-event-handler' , level: 2 }}
+
+An **event handler** is a component that reacts when an event is published.
+While the event represents a fact, the handler contains the logic of how the system responds to that fact.
+
+### Key Characteristics of Event Handlers {{ id: 'key-characteristics-of-event-handlers', level: 3, anchor: 'key-characteristics-of-event-handlers' }}
+
+* Listens for events and executes side effects in response.
+* Multiple handlers can subscribe to the same event.
+* Strongly typed to a specific event type, ensuring type safety.
+* Decoupled from event creation — handlers don’t influence how or when events are raised.
+* Can react to either `IEvent`-based or plain POCO/POJO events.
+
+## How to Create an Event Handler {{ id: 'how-to-create-an-event-handler' }}
+
+Event handlers implement the `IEventHandler<TEvent>` interface.
+
+### Example: handling an IEvent-based event
+
+```cs {{ title: 'Event handler for StarExplodedEvent'}}
+public class StarExplodedEventHandler : IEventHandler<StarExplodedEvent>
+{
+    public Task HandleAsync(StarExplodedEvent evt, CancellationToken cancellationToken = default)
+    {
+        Console.WriteLine($"Star {evt.Name} exploded at {evt.OccurredAt}!");
+        return Task.CompletedTask;
+    }
+}
+```
+
+### Example: handling a plain POCO/POJO event
+
+```cs {{ title: 'Event handler for POCO event'}}
+public class BlackHoleFormedHandler : IEventHandler<BlackHoleFormed>
+{
+    public Task HandleAsync(BlackHoleFormed evt, CancellationToken cancellationToken = default)
+    {
+        Console.WriteLine($"Black hole formed in galaxy {evt.Galaxy} at {evt.OccurredAt}");
+        return Task.CompletedTask;
+    }
+}
+```
+
+## Registering Event Handlers {{ id: 'registering-event-handlers' , level: 2 }}
+
+Once you’ve created event handlers, you must register them with Ergosfare.
+
+Add the following packages to your project:
+
+* `Stella.Ergosfare.Core.*`
+* `Stella.Ergosfare.Events`
+* `Stella.Ergosfare.Events.Abstractions`
+* `Stella.Ergosfare.Events.Extensions.MicrosoftDependencyInjection`
+
+Then configure in `Program.cs`:
+
+```cs {{ title: "Program.cs"}}
+builder.Services.AddErgosfare(options =>
+{
+    options.AddEventModule(module =>
+    {
+        // Register a single event manually
+        module.Register<StarExplodedEvent>();
+
+        // Or automatically register all event handlers in the assembly
+        module.RegisterFromAssembly(Assembly.GetExecutingAssembly());
+    });
+});
+```
+
+## Dispatching an Event {{ id: 'dispatching-an-event' }}
+
+Once registered, you can publish events using the `IEventMediator`.  
+Unlike commands, **all matching event handlers** will be invoked.  
+
+<Note>
+`IPublisher` is also available as a shorthand alias of `IEventMediator`.  You can use either interface interchangeably depending on your style preference.
+</Note>
+
+
+Both `IEventMediator` and `IPublisher` are automatically registered in DI when you add the EventModule.
+
+```cs {{ title: 'Dispatching an event'}}
+var mediator = serviceProvider.GetRequiredService<IEventMediator>();
+
+await mediator.Publish(new StarExplodedEvent("Betelgeuse", DateTime.UtcNow));
+
+// or using the shorthand alias
+var publisher = serviceProvider.GetRequiredService<IPublisher>();
+
+await publisher.Publish(new BlackHoleFormed { Galaxy = "Andromeda", OccurredAt = DateTime.UtcNow });
+```

@@ -1,0 +1,125 @@
+
+import { HeroPattern } from '@/components/HeroPattern'
+
+export const metadata = {
+  title: 'Quickstart - Events',
+  description:
+    'This guide will help you set up events in Ergosfare and start building event-driven workflows.',
+}
+
+export const sections = [
+    { title: 'What is an Interceptor', id: 'what-is-an-interceptor'},
+    { title: 'Key Characteristics of Interceptors', id: 'key-characteristics-of-interceptors'},
+    { title: 'Types of Interceptors', id: 'types-of-interceptors'},
+    { title: 'How Interceptors Work', id: 'how-interceptors-work'},
+    { title: 'Example: Pre-Execution Interceptor' , id: 'example-pre-interceptor'},
+    { title: 'Example: Exception Interceptor', id: 'example-exception-interceptor'},
+    { title: 'Usage Scenarios', id: 'interceptor-usage-scenarios'},
+]
+
+<HeroPattern />
+
+
+## Basically an Interceptor {{ id: 'what-is-an-interceptor', level: 2 }}
+
+In Ergosfare, **interceptors** are pipeline components that allow you to **observe, modify, or control the execution** of commands, queries, and events before or after they reach their respective handlers. They act like **gravity fields or shields** in a space system, shaping the trajectory of messages as they travel through the pipeline.
+
+While handlers focus purely on **business logic**, interceptors handle **cross-cutting concerns**, enabling you to keep your core logic clean, maintainable, and reusable.
+
+
+
+## Key Characteristics of Interceptors {{ id: 'key-characteristics-of-interceptors' }}
+
+* **Pipeline Integration:** Interceptors sit in the execution pipeline for commands, queries, or events and are invoked automatically during dispatch.
+* **Cross-Cutting Concerns:** They are ideal for logging, validation, authorization, context propagation, and error handling.
+* **Message Observation & Modification:** Interceptors can inspect or modify messages as they pass through the pipeline.
+* **Execution Control:** They can abort execution early or conditionally skip downstream processing using the execution context.
+* **Type-Specific or Generic:** Interceptors can target specific message types or apply generically across multiple types.
+* **Decoupled from Business Logic:** Handlers remain focused on business logic, while interceptors manage infrastructural or cross-cutting concerns.
+
+
+## Types of Interceptors {{ id: 'types-of-interceptors' }}
+
+Ergosfare provides **flexible interception points**, depending on the stage of execution:
+
+- **Pre-Execution Interceptors**
+
+   - Run **before** a handler executes.
+   - Ideal for validation, logging input data, propagating context values, or enforcing authorization.
+
+- **Post-Execution Interceptors**
+
+   - Run **after** a handler completes successfully.
+   - Can log results, transform output, or trigger additional side effects.
+
+-  **Exception Interceptors**
+   * Run when a handler or an any other interception **throws an exception**.
+   * Useful for centralized error handling, retries, or transforming exceptions into domain-specific responses.
+
+
+## How Interceptors Work {{ id: 'how-interceptors-work' }}
+
+Interceptors are invoked automatically in the **pipeline sequence** during command, query, or event dispatch. They receive the **execution context** (`IExecutionContext`) and the **message instance**, giving them full control over the flow:
+
+- Access contextual data such as **tenant IDs, user identity, or correlation IDs**.
+- Modify message properties before the handler executes.
+- Abort execution early with `ExecutionContext.Abort()`.
+- Observe results or exceptions after execution.
+
+This ensures a **consistent, reusable mechanism** for cross-cutting concerns without polluting the domain logic in handlers.
+
+
+## Example: Pre-Execution Interceptor {{ id: 'example-pre-interceptor' }}
+
+```cs {{title: 'Example Logging Pre-Interceptor'}}
+public class LoggingInterceptor : IQueryPreInterceptor
+{
+    public Task HandleAsync(IQuery query, IExecutionContext context)
+    {
+        Console.WriteLine($"Intercepting message: {query.GetType().Name}");
+        return Task.CompletedTask;
+    }
+}
+
+```
+
+**Behavior:**
+
+* Logs the message type before the handler executes.
+* Does not modify the message but could if needed.
+
+
+
+## Example: Exception Interceptor {{ id: 'example-exception-interceptor'  }}
+
+```cs
+public class ErrorHandlingInterceptor : ICommandExceptionInterceptor<TCommand>
+{
+    public async Task HandleAsync(
+        TCommand message, 
+        object? result, 
+        ExceptionDispatchInfo ExceptionDispatchInfo, 
+        IExecutionContext context)
+    {
+         Console.WriteLine(
+            $"Error in handling {typeof(TMessage).Name}: {ExceptionDispatchInfo.SourceException.Message}");
+    }
+}
+```
+
+**Behavior:**
+
+* Catches exceptions thrown by the handler or downstream interceptors.
+* Centralizes error logging or transformation.
+
+
+## Usage Scenarios {{ id: 'interceptor-usage-scenarios' }}
+
+Interceptors can be used for a wide range of **cross-cutting behaviors**:
+
+* **Logging & Telemetry:** Track message flow, execution duration, and metrics.
+* **Validation & Authorization:** Enforce rules before the message reaches the handler.
+* **Context Propagation:** Share tenant IDs, correlation IDs, or other scoped information.
+* **Error Handling:** Retry failed operations, log errors, or convert exceptions into domain events.
+* **Dynamic Behavior:** Modify messages, cancel execution, or trigger additional side effects conditionally.
+

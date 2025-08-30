@@ -1,0 +1,204 @@
+
+import { HeroPattern } from '@/components/HeroPattern'
+
+export const metadata = {
+  title: 'Post-Interceptors',
+  description:
+    'This guide will help you set up post interceptors in Ergosfare infrastructure and extend message processing with cross-cutting concerns after handlers execute.',
+}
+
+export const sections = [
+    { title: 'Post-Interceptors in Ergosfare', id: 'what-is-a-post-interceptor'},
+    { title: 'Core Concepts', id: 'core-concepts'},
+    { title: 'Module-Specific Post-Interceptor Interfaces', id: 'module-specific-post-interceptor-interfaces'},
+    { title: 'Examples', id: 'examples'},
+    { title: 'Registering Post-Interceptors', id: 'registering-post-interceptors'},
+]
+
+<HeroPattern />
+
+## Post-Interceptors in Ergosfare {{ id:'what-is-a-post-interceptor' , level: 2}}
+
+Post-interceptors allow you to observe, modify, or react **after** a command, query, or event has been handled.  
+They are ideal for concerns such as **logging results, auditing, publishing domain events, caching, or transforming responses**.  
+Think of them as the “afterburners” of your message pipeline—kicking in right after your handlers finish execution.  
+
+
+## Core Concepts {{ id: 'core-concepts' , level: 2}}
+
+Ergosfare defines a core interface for post-interceptors, which is the foundation for all module-specific variants:
+
+```cs {{title: "CoreModule Post-Interceptor Interface definition"}}
+public interface IAsyncPostInterceptor<TMessage>
+{
+    Task HandleAsync(
+        TMessage message, 
+        object? result,
+        IExecutionContext context, 
+        CancellationToken cancellationToken = default
+    );
+}
+````
+
+```cs {{ title: 'CoreModule Post-Interceptor Example'}}
+public class LoggingPostInterceptor<TMessage> : IAsyncPostInterceptor<TMessage>
+{
+    public Task HandleAsync(
+        TMessage message, 
+        object? result,
+        IExecutionContext context, 
+        CancellationToken cancellationToken = default
+    )
+    {
+        Console.WriteLine($"Handled message: {typeof(TMessage).Name}");
+        return Task.CompletedTask;
+    }
+}
+```
+
+* `TMessage` represents the type of the message (Command, Query, or Event).
+* `IExecutionContext` provides runtime context such as user identity, tenant, or correlation IDs.
+
+<Note>
+    Core interfaces cannot be directly registered in higher-level modules. They serve as foundations for module-specific post-interceptors.
+</Note>
+
+
+
+## Module-Specific Post-Interceptor Interfaces {{ id: 'module-specific-post-interceptor-interfaces' , level: 2}}
+
+Each module defines dedicated post-interceptor interfaces:
+
+| Module  | Non-Generic Interface     | Generic Interfaces                                                                 |
+| ------- | ------------------------- | ---------------------------------------------------------------------------------- |
+| Command | `ICommandPostInterceptor` | `ICommandPostInterceptor<TCommand>` , `ICommandPostInterceptor<TCommand, TResult>` |
+| Query   | `IQueryPostInterceptor`   | `IQueryPostInterceptor<TQuery>` , `IQueryPostInterceptor<TQuery, TResult>`         |
+| Event   | `IEventPostInterceptor`   | `IEventPostInterceptor<TEvent>`                                                    |
+
+#### Key Notes
+
+* **Non-generic interfaces** run for *all messages* in a module (e.g., all commands).
+* **Generic single-parameter interfaces** apply to a specific type of message.
+* **Generic dual-parameter interfaces (`TMessage, TResult`)** allow interceptors to observe and modify the *result* of handlers (available for Commands & Queries only).
+* Module-specific interfaces are automatically discoverable by the registration system.
+
+
+## Examples {{ id: 'examples' , level: 2}}
+
+### Command Post-Interceptor (Generic)
+
+```cs {{title: "command post-interceptor"}}
+public class LoggingPostInterceptor<TCommand> 
+    : ICommandPostInterceptor<TCommand>
+{
+    public Task HandleAsync(
+        TCommand command, 
+        object? result,
+        IExecutionContext context, 
+        CancellationToken cancellationToken = default)
+    {
+        Console.WriteLine($"Finished handling command: {typeof(TCommand).Name}");
+        return Task.CompletedTask;
+    }
+}
+```
+
+* Runs after any command of type `TCommand` completes.
+
+
+
+### Command Post-Interceptor with Result
+
+```cs {{title: "command post-interceptor with result"}}
+public class AuditingPostInterceptor<TCommand, TResult> 
+    : ICommandPostInterceptor<TCommand, TResult>
+{
+    public Task HandleAsync(
+        TCommand command, 
+        TResult result, 
+        IExecutionContext context, 
+        CancellationToken cancellationToken = default)
+    {
+        Console.WriteLine(
+            $"Command {typeof(TCommand).Name} produced result: {result}"
+        );
+        return Task.CompletedTask;
+    }
+}
+```
+
+* Captures both the command and the handler’s result.
+* Useful for auditing, result transformations, or caching.
+
+
+
+### Non-Generic Command Post-Interceptor
+
+```cs {{title: "non-generic command post-interceptor"}}
+public class GlobalCommandPostInterceptor : ICommandPostInterceptor
+{
+    public Task HandleAsync(
+        ICommand command, 
+        object? result,
+        IExecutionContext context, 
+        CancellationToken cancellationToken = default)
+    {
+        Console.WriteLine($"A command was executed: {command.GetType().Name}");
+        return Task.CompletedTask;
+    }
+}
+```
+
+* Runs for *every* command regardless of type.
+* Useful for global logging, telemetry, or auditing.
+
+
+### Query Post-Interceptor with Result
+
+```cs {{title: "query post-interceptor with result"}}
+public class CachingPostInterceptor<TQuery, TResult> 
+    : IQueryPostInterceptor<TQuery, TResult>
+{
+    public Task HandleAsync(
+        TQuery query, 
+        TResult result, 
+        IExecutionContext context, 
+        CancellationToken cancellationToken = default)
+    {
+        Console.WriteLine($"Query {typeof(TQuery).Name} returned {result}");
+        // Store in cache or apply transformations
+        return Task.CompletedTask;
+    }
+}
+```
+
+* Runs after a query is handled.
+* Can modify or cache query results.
+
+
+
+## Registering Post-Interceptors {{ id: 'registering-post-interceptors' , level: 2}}
+
+Post-interceptors are registered the same way as handlers or as any other type of interceptor:
+
+```cs {{ title: 'registering post-interceptors'}}
+builder.Services.AddErgosfare(options =>
+{
+    options.AddCommandModule(module =>
+    {
+        // Register a specific post-interceptor
+        module.Register<LoggingPostInterceptor<CreateStarCommand>>();
+
+        // Register a post-interceptor with result
+        module.Register<AuditingPostInterceptor<CreateStarCommand, Star>>();
+
+        // Register all interceptors from assembly
+        module.RegisterFromAssembly(Assembly.GetExecutingAssembly());
+    });
+});
+```
+
+- No special method is required; they use the same `Register<T>()` mechanism.
+- If an interceptor implements `ICommandPostInterceptor<T>` or `ICommandPostInterceptor<T, TResult>`, it is automatically added to the command pipeline.
+
+- With Post-Interceptors, you can extend processing **after** handlers, making them a natural fit for **auditing, telemetry, caching, notifications, or chaining domain side-effects**.

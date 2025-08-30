@@ -1,0 +1,180 @@
+import { HeroPattern } from '@/components/HeroPattern'
+
+export const metadata = {
+  title: 'Quickstart',
+  description:
+    'his guide will help you set up your first Ergosfare project and start using the framework’s core features.',
+}
+
+<HeroPattern />
+
+# Quickstart
+
+This guide will help you set up your first Ergosfare project and start using the framework’s core features. You’ll learn how to create a new project, configure essential modules, and handle your first commands, queries, and events. By the end, you’ll have a working foundation to build on and know where to go next for advanced features. {{ className: 'lead' }}
+
+<Note>
+  ##### Before you can start using Ergosfare, make sure your environment meets the following requirements:
+
+  - At least C# 13
+  - .NET 9
+ 
+</Note>
+
+## Create a .NET 9+ project
+
+Before you can start building your web application, you need to create an ASP.NET Core project and integrate Ergosfare. Ergosfare provides a modular framework for handling commands, queries, and events, along with a C# SDK to simplify development.
+
+
+```bash
+
+dotnet new webapi -n MyErgosfareApp && cd MyErgosfareApp
+```
+
+
+## Add Ergosfare to your project
+
+To use Ergosfare in your application, you need to add the SDK to your project. This allows you to access its core features, including commands, queries, events, and built-in modules for dependency injection and messaging. You can install it via the .NET CLI or the NuGet Package Manager.
+
+<CodeGroup>
+
+```bash {{title: 'dotnet cli' }}
+dotnet add package Ergosfare 
+```
+
+```bash {{title: 'nuget console (Visual Studio)' }}
+Install-Package Ergosfare
+```
+</CodeGroup>
+
+
+
+## Configure Ergosfare in Your Application
+
+Once the Ergosfare SDK is installed, you need to register it with the ASP.NET Core dependency injection container. This allows your application to access commands, queries, events, and other framework features throughout your project.
+
+
+```cs {{ title: 'program.cs'}}
+
+var builder = WebApplication.CreateBuilder(args);
+
+// Register Ergosfare services
+builder.Services.AddErgosfare(options =>
+{
+    // Configure modules, handlers, or custom options here
+    options
+      .AddCommandModule(...)
+      .AddQueryModule(...)
+      .AddEventModule(...)
+});
+
+var app = builder.Build();
+app.MapControllers();
+app.Run();
+
+```
+
+
+
+<Note>
+- The AddErgosfare extension automatically registers the core services and modules needed for commands, events, and queries.
+
+- You can further customize the options to enable event interception, logging, or other extensions.
+
+- Once registered, you can inject the necessary Ergosfare services into your controllers or other services using constructor injection.
+ 
+</Note>
+ 
+
+
+### Define a Command
+A command represents an action or request in your system. Here, CreateOrderCommand contains the necessary data to create a new order.
+
+```cs {{title: "CreateOrderCommand.cs"}}
+public record CreateOrderCommand(string ProductId, int Quantity) : ICommand;
+```
+
+
+- Commands are simple DTOs that carry data.
+
+- They do not contain business logic—handlers do.
+
+### Implement a Command Handler
+
+The handler contains the business logic for processing the command.
+
+```cs {{title: "CreateOrderHandler.cs" }}
+public class CreateOrderHandler : ICommandHandler<CreateOrderCommand>
+{
+    public Task Handle(CreateOrderCommand command, IExcetionContext context,  CancellationToken ct)
+    {
+        // Your business logic here
+        Console.WriteLine($"Order created: {command.ProductId}, Quantity: {command.Quantity}");
+        return Task.CompletedTask;
+    }
+}
+
+```
+
+- Implements  `ICommandHandler<TCommand>` to handle a specific command.
+
+- Can perform database operations, validation, logging, or any other business logic.
+
+### Register the Handler with Ergosfare
+Add the command handler to the dependency injection container so Ergosfare can resolve it when commands are dispatched.
+
+```cs {{title: "Program.cs"}}
+builder.Services.AddErgosfare(options =>
+{
+    options.AddCommandModule(module =>
+    {
+        // Register a single command manually
+        module.Register<CreateOrderCommand>();
+
+        // Or automatically register all command handlers in the current assembly
+        module.RegisterFromAssembly(Assembly.GetExecutingAssembly());
+    });
+});
+```
+
+Both `Register<TCommand>()` and `RegisterFromAssembly(...)` not only tell Ergosfare about the command types, but also ensure their handlers are registered in the **ASP.NET Core service container**. This means you can immediately inject and use them without additional configuration
+
+
+### Sending commands
+
+```cs {{title: "OrderController.cs"}}
+
+[ApiController]
+[Route("api/[controller]")]
+public class OrdersController : ControllerBase
+{
+    private readonly ICommandMediator _mediator;
+
+    public OrdersController(ICommandMediator mediator)
+    {
+        _mediator = mediator;
+    }
+
+    [HttpPost]
+    public async Task<IActionResult> CreateOrder([FromBody] CreateOrderCommand command)
+    {
+        await _mediator.Send(command);
+        return Ok(new { message = "Order created successfully!" });
+    }
+}
+
+```
+
+- ICommandMediator handles dispatching commands to the appropriate handler.
+
+- API endpoints remain thin and focused on request/response logic.
+
+- Business logic stays in the command handler, keeping your code modular and testable.
+
+
+## Explore the Core Concepts?
+
+Great, you're now set up with an API client and have made your first request to the API. Here are a few links that might be handy as you venture further into the Protocol API:
+
+- [Configuring Ergosfare](/core-concepts#configure)
+- [Check out the Conversations endpoint](/conversations)
+- [Learn about the different error messages in Protocol](/errors)
