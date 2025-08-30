@@ -3,26 +3,26 @@ import { Heading } from '@/components/Heading'
 
 const guides = [
   {
-    href: '/modules/core',
+    href: '/core-concepts/modules-and-extensions#core-module',
     name: 'Core module',
-    description: 'Learn how to authenticate your API requests.',
+    description: 'Learn how to core module foundations of Ergosfare infrastructure.',
   },
   {
-    href: '/modules/commands',
+    href: '/building-with-ergosfare/commands-and-command-handlers',
     name: 'Command module',
-    description: 'Understand how to work with paginated responses.',
+    description: 'Understand how to work with Ergosfares command module.',
   },
   {
-    href: '/modules/query',
+    href: '/building-with-ergosfare/queries-and-query-handlers',
     name: 'Query module',
     description:
-      'Read about the different types of errors returned by the API.',
+      'Discover how to leverage the query module for data retrieval.',
   },
   {
-    href: '/modules/event',
+    href: '/building-with-ergosfare/events-and-event-handlers',
     name: 'Event module',
     description:
-      'Learn how to programmatically configure webhooks for your app.',
+      'Explore the event module for event-driven architectures.',
   },
 ]
 

@@ -103,7 +103,7 @@ public record CreateOrderCommand(string ProductId, int Quantity) : ICommand;
 The handler contains the business logic for processing the command.
 
 ```cs {{title: "CreateOrderHandler.cs" }}
-public class CreateOrderHandler : ICommandHandler<CreateOrderCommand>
+public class CreateOrderCommandHandler : ICommandHandler<CreateOrderCommand>
 {
     public Task Handle(CreateOrderCommand command, IExcetionContext context,  CancellationToken ct)
     {
@@ -128,7 +128,7 @@ builder.Services.AddErgosfare(options =>
     options.AddCommandModule(module =>
     {
         // Register a single command manually
-        module.Register<CreateOrderCommand>();
+        module.Register<CreateOrderCommandHandler>();
 
         // Or automatically register all command handlers in the current assembly
         module.RegisterFromAssembly(Assembly.GetExecutingAssembly());

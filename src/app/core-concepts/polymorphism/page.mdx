@@ -41,7 +41,7 @@ public class SiriusCommand : StarCommand
 ```cs {{ title: 'Handler for base command (all stars)'}}
 public class StarCommandHandler : ICommandHandler<StarCommand>
 {
-    public Task HandleAsync(StarCommand command, CancellationToken cancellationToken = default)
+    public Task HandleAsync(StarCommand command, IExecutionContext context, CancellationToken cancellationToken = default)
     {
         Console.WriteLine($"Creating a generic star: {command.Name}");
         return Task.CompletedTask;
@@ -51,7 +51,7 @@ public class StarCommandHandler : ICommandHandler<StarCommand>
 ```cs {{ title: 'Handler for Sun'}}
 public class SunCommandHandler : ICommandHandler<SunCommand>
 {
-    public Task HandleAsync(SunCommand command, CancellationToken cancellationToken = default)
+    public Task HandleAsync(SunCommand command, IExecutionContext context, CancellationToken cancellationToken = default)
     {
         Console.WriteLine($"Creating a sun: {command.Name}, Temperature: {command.Temperature}");
         return Task.CompletedTask;
@@ -61,7 +61,7 @@ public class SunCommandHandler : ICommandHandler<SunCommand>
 ```cs {{ title: 'Handler for Sirius'}}
 public class SiriusCommandHandler : ICommandHandler<SiriusCommand>
 {
-    public Task HandleAsync(SiriusCommand command, CancellationToken cancellationToken = default)
+    public Task HandleAsync(SiriusCommand command, IExecutionContext context, CancellationToken cancellationToken = default)
     {
         Console.WriteLine($"Creating Sirius in constellation: {command.Constellation}");
         return Task.CompletedTask;
@@ -120,7 +120,7 @@ public record ArtificialGravityCommand : GravityCommand<ArtificialGravity>;
 ```cs {{ title: 'Generic handler'}}
 public class GravityCommandHandler<TGravity> : ICommandHandler<GravityCommand<TGravity>>
 {
-    public Task HandleAsync(GravityCommand<TGravity> command, CancellationToken cancellationToken = default)
+    public Task HandleAsync(GravityCommand<TGravity> command, IExecutionContext context,  CancellationToken cancellationToken = default)
     {
         Console.WriteLine($"Processing gravity command for: {typeof(TGravity).Name}");
         return Task.CompletedTask;
