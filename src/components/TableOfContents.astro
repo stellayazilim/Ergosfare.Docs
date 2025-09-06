@@ -1,0 +1,107 @@
+---
+
+import TocSection from './TOCSection.astro'
+
+interface Subsection {
+  id: string
+  title: string
+}
+
+interface Section {
+  id: string
+  title: string
+  children: Subsection[]
+}
+
+
+  
+interface Props {
+  tableOfContents: Array<Section>
+}
+
+const { toc  } =  Astro.locals.starlightRoute;
+---
+
+<div class="hidden xl:sticky xl:top-19 xl:-mr-6 xl:block xl:h-[calc(100vh-4.75rem)] xl:flex-none xl:overflow-y-auto xl:py-16 xl:pr-6">
+  <nav aria-labelledby="on-this-page-title" class="w-56">
+    {toc && toc.items.length > 0 && (
+      <>
+        <h2
+          id="on-this-page-title"
+          class="font-display text-sm font-medium text-slate-900 dark:text-white"
+        >
+          On this page
+        </h2>
+        <ol role="list" class="mt-4 space-y-3 text-sm">
+          {toc.items.map((section) => (
+            
+            <TocSection {...section} />
+          ))}
+        </ol>
+      </>
+    )}
+  </nav>
+</div>
+
+<script>
+  const links = Array.from(document.querySelectorAll<HTMLAnchorElement>('.toc-link'))
+  if (links.length > 0) {
+    function getHeadings() {
+      return links
+        .map((link) => {
+          const id = link.dataset.id
+          if (!id) return null
+          const el = document.getElementById(id)
+          if (!el) return null
+          const style = window.getComputedStyle(el)
+          const scrollMt = parseFloat(style.scrollMarginTop)
+          const top = window.scrollY + el.getBoundingClientRect().top - scrollMt
+          return { id, top, link }
+        })
+        .filter(Boolean)
+    }
+
+    let headings = getHeadings().filter(x => x != null)
+
+    function onScroll() {
+
+      const top = window.scrollY
+      let current = headings[0]?.id
+
+      for (const heading of headings || []) {
+        if (top >= heading.top - 10) {
+          current = heading?.id
+        } else {
+          break
+        }
+      }
+      if (current) {
+        links.forEach((link) => {
+          if (link.dataset.id === current) {
+            link.classList.add('text-sky-500')
+            link.classList.remove(
+              'font-normal',
+              'text-slate-500',
+              'hover:text-slate-700',
+              'dark:text-slate-400',
+              'dark:hover:text-slate-300'
+            )
+          } else {
+            link.classList.remove('text-sky-500')
+            link.classList.add(
+              'font-normal',
+              'text-slate-500',
+              'hover:text-slate-700',
+              'dark:text-slate-400',
+              'dark:hover:text-slate-300'
+            )
+          }
+        })
+      }
+    }
+
+    window.addEventListener('scroll', onScroll, { passive: true })
+    window.addEventListener('resize', () => (headings = getHeadings().filter( x => x != null)))
+    onScroll()
+  }
+</script>

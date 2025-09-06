@@ -1,0 +1,58 @@
+---
+import clsx from "clsx"
+import Default from "@astrojs/starlight/components/Header.astro"
+import GitHubIcon from "./GitHubIcon.astro"
+import ThemeSelector from "@astrojs/starlight/components/ThemeSelect.astro"
+import Search from "@astrojs/starlight/components/Search.astro"
+import Logomark from "./Logomark.astro"
+import Logo from "./Logo.astro"
+
+
+---
+
+ <header
+      class={'sticky top-0 z-50 flex flex-none flex-wrap items-center justify-between px-4 py-5 shadow-md shadow-slate-900/5 transition duration-500 sm:px-6 lg:px-8 dark:shadow-none bg-white dark:bg-slate-900'}
+    >
+  <div class="mr-6 flex lg:hidden">
+    <!-- <MobileNavigation /> -->
+  </div>
+  <div>
+    <a href="/" aria-label="Home page">
+      <Logomark/>
+      <Logo/>
+    </a>
+  </div>
+  <div class="inline">
+    <Search />
+  </div>
+  <div class="relative flex basis-0 justify-end gap-6 sm:gap-8 md:grow">
+   
+        <a href="https://github.com" class="group" aria-label="GitHub">
+          <GitHubIcon class="h-6 w-6 fill-slate-400 group-hover:fill-slate-500 dark:group-hover:fill-slate-300" /> 
+        </a>
+  </div>
+</header>
+
+
+
+<script >
+    import clsx from "clsx"
+
+    const header: HTMLElement | undefined =  document.getElementsByTagName("header")?.[0]
+    const onWindowScroll = () => {
+
+        if (window.scrollY > 0) {
+            header.classList.add("dark:bg-slate-900/95", "dark:backdrop-blur-sm", "dark:[@supports(backdrop-filter:blur(0))]:bg-slate-900/75");
+            return header.classList.remove('dark:bg-transparent')
+            
+        } 
+        
+        header.classList.add('dark:bg-transparent')
+        return header.classList.remove("dark:bg-slate-900/95", "dark:backdrop-blur-sm", "dark:[@supports(backdrop-filter:blur(0))]:bg-slate-900/75")
+    }
+
+    onWindowScroll()
+    window.addEventListener("scroll", onWindowScroll, { passive: true })
+
+
+</script>
