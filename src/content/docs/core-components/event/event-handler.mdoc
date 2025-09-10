@@ -1,0 +1,146 @@
+---
+title: Event Handlers
+description: How to implement and invoke event handlers in Ergosfare using IEventMediator.
+---
+
+## What is an Event Handler?
+
+An **event handler** processes events, implementing:
+
+- `IEventHandler<TEvent>` — for events that are **fire-and-forget** notifications.
+
+Events represent **something that happened** in the system. They do not return values and are meant for **reactive processing**.
+
+> ⚡ Handlers do **not** require the Event Module to exist.  
+> You only need `Ergosfare.Contracts` and `Ergosfare.Context`.
+
+> ⚡ Unlike commands and queries, **events can have multiple handlers**. All subscribed handlers are executed when the event is published.
+
+---
+
+## Event Handler Example
+
+Event:
+
+```csharp
+public record OrderCreatedEvent(Guid OrderId, string CustomerId) : IEvent;
+```
+
+Handler:
+
+```csharp
+using Ergosfare.Contracts;
+using Ergosfare.Context;
+
+public sealed class SendOrderConfirmationHandler(
+    IEmailService emailService
+) : IEventHandler<OrderCreatedEvent>
+{
+    public async Task Handle(OrderCreatedEvent @event, IExecutionContext context)
+    {
+        var message = $"Order {@event.OrderId} for customer {@event.CustomerId} has been created.";
+        await emailService.SendAsync(@event.CustomerId, "Order Confirmation", message, context.CancellationToken);
+    }
+}
+```
+
+Another handler could log the event:
+
+```csharp
+public sealed class LogOrderCreatedHandler(
+    ILogger<LogOrderCreatedHandler> logger
+) : IEventHandler<OrderCreatedEvent>
+{
+    public Task Handle(OrderCreatedEvent @event, IExecutionContext context)
+    {
+        logger.LogInformation("Order {OrderId} created for {CustomerId}", @event.OrderId, @event.CustomerId);
+        return Task.CompletedTask;
+    }
+}
+```
+
+> Event handlers **do not return values**. Use `context.CancellationToken` for cancellation support.
+
+---
+
+## Registering Event Handlers (Optional)
+
+Handlers can exist independently or be registered with the **Event Module** for DI and pipelines:
+
+```csharp
+builder.Services.AddErgosfare(registry =>
+{
+    registry.AddEventModule(e =>
+    {
+        e.Register<SendOrderConfirmationHandler>();
+        e.Register<LogOrderCreatedHandler>();
+        e.Register<LoggingInterceptor<OrderCreatedEvent>>();
+    });
+});
+```
+
+> Otherwise, handlers can be **instantiated manually**, which is common in unit tests.
+
+---
+
+## Invoking Events via Minimal Endpoint
+
+Events are dispatched using the **`IEventMediator`** interface. Example:
+
+```csharp
+var builder = WebApplication.CreateBuilder(args);
+var app = builder.Build();
+
+app.MapPost("/orders", async (CreateOrderCommand cmd, IEventMediator mediator) =>
+{
+    // create order logic here...
+    var orderId = Guid.NewGuid();
+
+    await mediator.Publish(new OrderCreatedEvent(orderId, cmd.CustomerId));
+    return Results.Ok("Order created and event dispatched");
+});
+
+app.Run();
+```
+
+> `IPublisher` also exists as an alias of `IEventMediator` for convenience.
+
+---
+
+## Sequential Event Publishing
+
+If the **execution order of event handlers matters**, you can decorate handlers with `[Weight]` to define their order. Then use `PublishSequentially()` to ensure handlers are invoked in order:
+
+```csharp
+[Weight(10)]
+public sealed class FirstHandler : IEventHandler<OrderCreatedEvent> { ... }
+
+[Weight(20)]
+public sealed class SecondHandler : IEventHandler<OrderCreatedEvent> { ... }
+
+await mediator.PublishSequentially(new OrderCreatedEvent(orderId, cmd.CustomerId));
+```
+
+> Reference: [`WeightAttribute`](https://docs.ergosfare.com/api/Ergosfare.Contracts.WeightAttribute)
+
+---
+
+## Key Points
+
+* Event handlers **do not require the Event Module**.
+* `Ergosfare.Contracts` + `Ergosfare.Context` is enough to implement handlers.
+* Events are **fire-and-forget**; do not return values.
+* Use **`IEventMediator`** to dispatch events to all subscribed handlers.
+* **Multiple handlers can subscribe to the same event type**, unlike commands and queries which have a single handler.
+* Use `[Weight]` and `PublishSequentially()` to enforce handler order if needed.
+* Always support **`context.CancellationToken`**.
+
+---
+
+## Next Steps
+
+{% cardgrid %}
+{% linkcard title="Execution Context" href="/guides/events/execution-context" /%}
+{% linkcard title="Using Interceptors" href="/guides/interceptors" /%}
+{% /cardgrid %}
+

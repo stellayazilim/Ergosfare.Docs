@@ -1,5 +1,4 @@
 ---
-import Prose from "./Prose.astro";
 import TableOfContents from "./TableOfContents.astro";
 
 ---
@@ -8,11 +7,10 @@ import TableOfContents from "./TableOfContents.astro";
 
 
 <div class="w-full max-w-2xl min-w-0 px-4 py-16 lg:max-w-none lg:pr-0 lg:pl-8 xl:px-16">
-      <article>
-      
-      <slot />
-      </article>
+    <slot />
 </div>
 
 
-<TableOfContents  />
+<div class="relative">
+    <TableOfContents  />
+</div>

@@ -11,23 +11,25 @@ interface Props extends TocItem{
 
 }
 
-const { slug, children, text } = Astro.props
+const { slug, children, text, depth } = Astro.props
 ---
 
 <li>
-  <h3>
-    <TocLink id={id} title={title} />
+  <h3 class="toc-header">
+    <TocLink slug={slug} text={text} depth={depth} />
   </h3>
-  {items.length > 0 && (
+  {children.length > 0 && (
     <ol
       role="list"
       class="mt-2 space-y-3 pl-5 text-slate-500 dark:text-slate-400"
     >
-      {items.map((sub) => (
+      {children.filter( x => x.slug != "_top").map((sub) => (
         <li>
-          <TocLink id={sub.id} title={sub.title} />
-        </li>
-      ))}
+        
+            {sub.children.length > 0 ? <Astro.self  {...sub} /> : 
+                <TocLink {...sub} />
+            }
+        </li> ))}
     </ol>
   )}
 </li>
