@@ -8,7 +8,7 @@ import markdoc from '@astrojs/markdoc';
 // https://astro.build/config
 export default defineConfig({
     outDir: "docs",
-    site: "stellayazilim.github.io/ergosfare.docs",
+    site: "https://stellayazilim.github.io/ergosfare.docs",
     integrations: [starlight({
         
         logo: { src: "./src/assets/ergosfare.svg", replacesTitle: true},
