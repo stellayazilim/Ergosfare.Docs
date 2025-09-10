@@ -1,5 +1,5 @@
 ---
-
+import { NormalizePathPosix } from "../utils/NormalizePath"
 import TocSection from './TOCSection.astro'
 
 interface Subsection {
@@ -7,18 +7,12 @@ interface Subsection {
   title: string
 }
 
-interface Section {
-  id: string
-  title: string
-  children: Subsection[]
-}
-
 
 const { toc  } =  Astro.locals.starlightRoute;
-
+const pathname = NormalizePathPosix(Astro.locals.starlightRoute.id);
 ---
 
-
+{  !["", "/", "tr"].some( x => x == pathname) &&
 <div class="relateive hidden xl:sticky xl:top-19 ml-8 xl:-mr-6 xl:block xl:h-[calc(100vh-4.75rem)] xl:flex-none xl:overflow-y-auto xl:py-16 xl:pr-6">
 <div class="absolute inset-y-0 left-0  bg-slate-50 dark:hidden" />
 <div class="absolute top-16 left-0 bottom-0 hidden h-12 w-px bg-linear-to-t from-slate-800 dark:block" />
@@ -40,6 +34,9 @@ const { toc  } =  Astro.locals.starlightRoute;
     </toc-wrapper>
   </nav>
 </div>
+
+}
+
 
 <script>
 
