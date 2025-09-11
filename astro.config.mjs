@@ -38,9 +38,9 @@ export default defineConfig({
             },
             {
                 label: "Core-concepts", translations:{ tr: "Temel Kavramlar"}, items: [
-                    { label: "Polymorhism", slug: "core-concepts/polymorphism", translations: {"tr": "Çok biçimlilik"}},
-                    { label: "Interceptors", slug: "core-concepts/interceptors", translations: { tr: "Önleyiciler"}},
-                    { label: "plugins", slug: "core-concepts/plugins", translations: { tr: "Eklentiler"}},
+                    { label: "Polymorhism", slug: "core-concepts/polymorphism", translations: { tr: "Çok biçimlilik"}},
+                    { label: "Interceptors", slug: "core-concepts/interceptors", translations: { tr: "Interceptors (Önleyiciler)"}},
+                    { label: "plugins", slug: "core-concepts/plugins", translations: { tr: "Plugins (Eklentiler)"}},
                     { label: "Execution Context", slug: "core-concepts/execution-context", translations: { tr: "Bağlam (Execution Context)"}}
                 ]
             },
@@ -48,17 +48,17 @@ export default defineConfig({
                 label: "Core Components", translations: { tr: "Temel Bileşenler"},
                 items: [
                     { label: "Modules and Extensions", slug: "core-components/modules-extensions", translations: { tr: "Modüller ve Uzantılar"}},
-                    { label: "Command Module", translations: { tr: "Komut Modülü"},  items: [
-                        { label: "defining command", slug: "core-components/command/command-definition", translations: { tr: "Komut Tanımlama"}},
-                        { label: "defining command-handler", slug: "core-components/command/command-handler", translations: { tr: "Komut İşleyici Tanımlama"}}
+                    { label: "Command Module", translations: { tr: "Command Modülü"},  items: [
+                        { label: "defining command", slug: "core-components/command/command-definition", translations: { tr: "Command Tanımlama"}},
+                        { label: "defining command-handler", slug: "core-components/command/command-handler", translations: { tr: "Command Handlers Tanımlama"}}
                     ]},
-                    { label: "Query Module", translations: { tr: "Sorgu Modülü" }, items: [
-                        { label: "defining query", slug: "core-components/query/query-definition", translations: { tr: "Sorgu Tanımlama"}},
-                        { label: "defining query-handler", slug: "core-components/query/query-handler", translations: { tr: "Sorgu İşleyici Tanımlama"}}
+                    { label: "Query Module", translations: { tr: "Query Modülü" }, items: [
+                        { label: "defining query", slug: "core-components/query/query-definition", translations: { tr: "Query Tanımlama"}},
+                        { label: "defining query-handler", slug: "core-components/query/query-handler", translations: { tr: "Query Handler Tanımlama"}}
                     ]},
-                    { label: "Event Module", translations: {tr:"Olay Modülü"}, items: [
-                        { label: "defining event", slug: "core-components/event/event-definition", translations: {tr: "Olay Tanımlama"}},
-                        { label: "defining event-handler", slug: "core-components/event/event-handler", translations: { tr: "Olay İşleyici Tanımlama"}}
+                    { label: "Event Module", translations: {tr:"Event Modülü"}, items: [
+                        { label: "defining event", slug: "core-components/event/event-definition", translations: {tr: "Event Tanımlama"}},
+                        { label: "defining event-handler", slug: "core-components/event/event-handler", translations: { tr: "Event Handlers Tanımlama"}}
                     ]} 
                 ]
             },
