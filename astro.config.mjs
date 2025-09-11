@@ -11,8 +11,7 @@ import react from "@astrojs/react";
 export default defineConfig({
     outDir: "docs",
     site: "https://stellayazilim.github.io/ergosfare.docs",
-    trailingSlash: "never",
-    base: "/ergosfare.docs",
+    base: "/ergosfare.docs/",
     integrations: [starlight({
         
         logo: { src: "./src/assets/ergosfare.svg", replacesTitle: true},
