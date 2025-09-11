@@ -63,9 +63,9 @@ export default defineConfig({
                 ]
             },
             { label: "Cross-cutting concerns", items: [
-                { label: "Pre-interceptors", slug: "cross-cutting-concerns/pre-interceptors" , translations: { tr: "On-Önleyiciler (Pre-Interceptors)"}},
-                { label: "Post-interceptors", slug: "cross-cutting-concerns/post-interceptors", translations: { tr: "Son-Önleyiciler (Post-Interceptors)"}},
-                { label: "Exception-Interceptors", slug: "cross-cutting-concerns/exception-interceptors", translations: { tr: "Hata-Önleyiciler (Exception-interceptors)"}},
+                { label: "Pre-interceptors", slug: "cross-cutting-concerns/pre-interceptors" },
+                { label: "Post-interceptors", slug: "cross-cutting-concerns/post-interceptors"},
+                { label: "Exception-Interceptors", slug: "cross-cutting-concerns/exception-interceptors"},
             ]}
       
         ],
