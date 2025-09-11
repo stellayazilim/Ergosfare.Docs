@@ -8,7 +8,9 @@ description: Learn how to define events in Ergosfare.
 Events in Ergosfare represent **notifications that something has happened**.  
 An event is **any type that implements `IEvent`** from `Ergosfare.Contracts`.
 
-> ⚡ You don’t need the Event Module to define events. Only include `Ergosfare.Contracts`.
+> ⚡ You don’t need the Event Module to define events. Only include `Ergosfare.Contracts`.  
+> ⚡ If an object **implements the `IEvent` interface**, it will be automatically **treated as an event** and can be published via `IEventMediator`.  
+> ⚡ However, **events can also be defined as POCO (C#) or POJO (Java) classes**. This allows your domain layer to remain **free of Ergosfare dependencies**.
 
 ---
 
@@ -16,7 +18,7 @@ An event is **any type that implements `IEvent`** from `Ergosfare.Contracts`.
 
 {% prose %}
 * Events are used to **notify the system or subscribers** of a state change or important occurrence.
-* Unlike commands and Queries, events can have multiple handlers.
+* Unlike commands and queries, events can have multiple handlers.
 * Events can be defined as **classes, records, or structs**.
 * Events carry all the information needed for subscribers to react.
 * Keep events **lightweight** and free of business logic.
@@ -73,12 +75,12 @@ public record ProductStockUpdatedEvent(string productId, int quantity) : IEvent
 * Prefer immutability for easier reasoning, testing, and consistency.
 {% /prose %}
 
+---
 
 ## Next Steps
 
 {% cardgrid %}
-
 {% linkcard title="Defining Event Handlers" href="./event-handler" /%}
 {% linkcard title="Publishing Events via IEventMediator" href="" /%}
-
 {% /cardgrid %}
+

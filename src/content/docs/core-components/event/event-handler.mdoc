@@ -1,146 +1,109 @@
+Here’s the **updated English version** of your Event documentation with the POCO/POJO clarification added:
+
+````md
 ---
-title: Event Handlers
-description: How to implement and invoke event handlers in Ergosfare using IEventMediator.
----
-
-## What is an Event Handler?
-
-An **event handler** processes events, implementing:
-
-- `IEventHandler<TEvent>` — for events that are **fire-and-forget** notifications.
-
-Events represent **something that happened** in the system. They do not return values and are meant for **reactive processing**.
-
-> ⚡ Handlers do **not** require the Event Module to exist.  
-> You only need `Ergosfare.Contracts` and `Ergosfare.Context`.
-
-> ⚡ Unlike commands and queries, **events can have multiple handlers**. All subscribed handlers are executed when the event is published.
-
+title: Create an Event
+description: Learn how to define events in Ergosfare.
 ---
 
-## Event Handler Example
+## What is an Event?
 
-Event:
+Events in Ergosfare represent **notifications that something has happened**.  
+An event is **any type that implements `IEvent`** from `Ergosfare.Contracts`.
 
-```csharp
-public record OrderCreatedEvent(Guid OrderId, string CustomerId) : IEvent;
-```
+> ⚡ You don’t need the Event Module to define events. Only include `Ergosfare.Contracts`.  
+> ⚡ If an object **implements the `IEvent` interface**, it will be automatically **treated as an event** and can be published via `IEventMediator`.  
+> ⚡ However, **events can also be defined as POCO (C#) or POJO (Java) classes**. This allows your domain layer to remain **free of Ergosfare dependencies**.
 
-Handler:
+---
+
+### Key Points
+
+{% prose %}
+* Events are used to **notify the system or subscribers** of a state change or important occurrence.
+* Unlike commands and queries, events can have multiple handlers.
+* Events can be defined as **classes, records, or structs**.
+* Events carry all the information needed for subscribers to react.
+* Keep events **lightweight** and free of business logic.
+* Events are typically **immutable**, but can be mutable if pre-handlers need to enrich them with context.
+* Single Responsibility: Each event represents a single, discrete occurrence.
+* Events in Ergosfare are **fire-and-forget**; they do not return a result.
+{% /prose %}
+
+---
+
+## Event Example
 
 ```csharp
 using Ergosfare.Contracts;
-using Ergosfare.Context;
 
-public sealed class SendOrderConfirmationHandler(
-    IEmailService emailService
-) : IEventHandler<OrderCreatedEvent>
+public record OrderCreatedEvent(Guid OrderId, string CustomerId) : IEvent;
+````
+
+### Events are Immutable by Default
+
+Events are **immutable** by design. This ensures that event data remains consistent from creation to handling.
+If needed, events can be **mutated via pre-handlers** before reaching their handlers (e.g., to enrich with tenant, user, or environment context).
+
+---
+
+### Mutable vs. Immutable Events
+
+#### Immutable Event
+
+```csharp
+using Ergosfare.Contracts;
+
+public record ProductStockUpdatedEvent(string ProductId, int Quantity) : IEvent;
+```
+
+#### Mutable Event
+
+```csharp
+using Ergosfare.Contracts;
+
+public record ProductStockUpdatedEvent(string productId, int quantity) : IEvent
 {
-    public async Task Handle(OrderCreatedEvent @event, IExecutionContext context)
-    {
-        var message = $"Order {@event.OrderId} for customer {@event.CustomerId} has been created.";
-        await emailService.SendAsync(@event.CustomerId, "Order Confirmation", message, context.CancellationToken);
-    }
+    public string ProductId { get; set; } = productId;
+    public int Quantity { get; set; } = quantity;
 }
 ```
 
-Another handler could log the event:
+#### Notes on Mutable Events
 
-```csharp
-public sealed class LogOrderCreatedHandler(
-    ILogger<LogOrderCreatedHandler> logger
-) : IEventHandler<OrderCreatedEvent>
-{
-    public Task Handle(OrderCreatedEvent @event, IExecutionContext context)
-    {
-        logger.LogInformation("Order {OrderId} created for {CustomerId}", @event.OrderId, @event.CustomerId);
-        return Task.CompletedTask;
-    }
-}
-```
+{% prose %}
 
-> Event handlers **do not return values**. Use `context.CancellationToken` for cancellation support.
-
----
-
-## Registering Event Handlers (Optional)
-
-Handlers can exist independently or be registered with the **Event Module** for DI and pipelines:
-
-```csharp
-builder.Services.AddErgosfare(registry =>
-{
-    registry.AddEventModule(e =>
-    {
-        e.Register<SendOrderConfirmationHandler>();
-        e.Register<LogOrderCreatedHandler>();
-        e.Register<LoggingInterceptor<OrderCreatedEvent>>();
-    });
-});
-```
-
-> Otherwise, handlers can be **instantiated manually**, which is common in unit tests.
-
----
-
-## Invoking Events via Minimal Endpoint
-
-Events are dispatched using the **`IEventMediator`** interface. Example:
-
-```csharp
-var builder = WebApplication.CreateBuilder(args);
-var app = builder.Build();
-
-app.MapPost("/orders", async (CreateOrderCommand cmd, IEventMediator mediator) =>
-{
-    // create order logic here...
-    var orderId = Guid.NewGuid();
-
-    await mediator.Publish(new OrderCreatedEvent(orderId, cmd.CustomerId));
-    return Results.Ok("Order created and event dispatched");
-});
-
-app.Run();
-```
-
-> `IPublisher` also exists as an alias of `IEventMediator` for convenience.
-
----
-
-## Sequential Event Publishing
-
-If the **execution order of event handlers matters**, you can decorate handlers with `[Weight]` to define their order. Then use `PublishSequentially()` to ensure handlers are invoked in order:
-
-```csharp
-[Weight(10)]
-public sealed class FirstHandler : IEventHandler<OrderCreatedEvent> { ... }
-
-[Weight(20)]
-public sealed class SecondHandler : IEventHandler<OrderCreatedEvent> { ... }
-
-await mediator.PublishSequentially(new OrderCreatedEvent(orderId, cmd.CustomerId));
-```
-
-> Reference: [`WeightAttribute`](https://docs.ergosfare.com/api/Ergosfare.Contracts.WeightAttribute)
-
----
-
-## Key Points
-
-* Event handlers **do not require the Event Module**.
-* `Ergosfare.Contracts` + `Ergosfare.Context` is enough to implement handlers.
-* Events are **fire-and-forget**; do not return values.
-* Use **`IEventMediator`** to dispatch events to all subscribed handlers.
-* **Multiple handlers can subscribe to the same event type**, unlike commands and queries which have a single handler.
-* Use `[Weight]` and `PublishSequentially()` to enforce handler order if needed.
-* Always support **`context.CancellationToken`**.
+* Mutable events must be **reference types**.
+* Mutation should only occur **before handler execution**, typically within pre-handlers.
+* Prefer immutability for easier reasoning, testing, and consistency.
+  {% /prose %}
 
 ---
 
 ## Next Steps
 
 {% cardgrid %}
-{% linkcard title="Execution Context" href="/guides/events/execution-context" /%}
-{% linkcard title="Using Interceptors" href="/guides/interceptors" /%}
+{% linkcard title="Defining Event Handlers" href="./event-handler" /%}
+{% linkcard title="Publishing Events via IEventMediator" href="" /%}
 {% /cardgrid %}
 
+---
+
+## 📖 Glossary
+
+| Term            | Description                                                                              |
+| --------------- | ---------------------------------------------------------------------------------------- |
+| Event           | A message or notification used to inform the system or subscribers.                      |
+| Handler         | A class that implements the logic to process an event.                                   |
+| Pre-handler     | A component that runs before the handler and can mutate or enrich the event.             |
+| Fire-and-forget | An event that is published without expecting a return value.                             |
+| IEventMediator  | Interface used to dispatch and publish events.                                           |
+| IPublisher      | Alias of `IEventMediator` for convenience.                                               |
+| \[Weight]       | Attribute used to define handler execution order.                                        |
+| POCO            | Plain Old C# Object — a simple class with no Ergosfare dependencies in the domain layer. |
+| POJO            | Plain Old Java Object — a simple class with no dependencies in the domain layer.         |
+
+```
+
+If you want, I can **also update the Event Handler doc** to include this POCO/POJO explanation and make sure the English docs fully match the Turkish ones. Do you want me to do that next?
+```
