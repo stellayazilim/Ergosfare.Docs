@@ -14,6 +14,13 @@ hero:
 ---
 
 import { Card, CardGrid } from '@astrojs/starlight/components';
+import { StarField  } from "../../components/constellation/starfield.tsx"
+
+ <div className="pt-20 pb-16 sm:pt-32 sm:pb-20 lg:py-20">
+    <div className="relative">
+      <StarField client:only className="-top-48 -right-44" />
+    </div>
+
 
 <CardGrid stagger> 
   <Card title="Reflection-Free" icon="zap"> 
@@ -32,3 +39,4 @@ import { Card, CardGrid } from '@astrojs/starlight/components';
     First-class plugin system. Extend and customize with ease. 
   </Card> 
 </CardGrid>
+</div>

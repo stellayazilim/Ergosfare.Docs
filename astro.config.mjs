@@ -5,6 +5,8 @@ import tailwindcss from '@tailwindcss/vite';
 
 import markdoc from '@astrojs/markdoc';
 
+import react from "@astrojs/react";
+
 // https://astro.build/config
 export default defineConfig({
     outDir: "docs",
@@ -15,17 +17,17 @@ export default defineConfig({
         
         logo: { src: "./src/assets/ergosfare.svg", replacesTitle: true},
         favicon: "./src/assets/favicon.png",
-		components: {
+        components: {
             Sidebar: "./src/components/Navigation.astro",
             PageFrame: "./src/components/PageFrame.astro",
             Header: "./src/components/Header.astro",
             ContentPanel: "./src/components/ContentPanel.astro",
             TwoColumnContent: "./src/components/TwoColumnContent.astro",
             Pagination: "./src/components/Pagination.astro",
-		},
-		title: 'Ergosfare',
-		social: [{ icon: 'github', label: 'GitHub', href: 'https://github.com/stellayazilim/ergosfare' }],
-		sidebar: [
+        },
+        title: 'Ergosfare',
+        social: [{ icon: 'github', label: 'GitHub', href: 'https://github.com/stellayazilim/ergosfare' }],
+        sidebar: [
             { 
                 label: "Getting-started",  
                 translations: { tr: "Başlarken" },
@@ -66,10 +68,10 @@ export default defineConfig({
                 { label: "Exception-Interceptors", slug: "cross-cutting-concerns/exception-interceptors", translations: { tr: "Hata-Önleyiciler (Exception-interceptors)"}},
             ]}
       
-		],
-		customCss: [
+        ],
+        customCss: [
         './src/styles/global.css'
-		],
+        ],
 
         defaultLocale: 'root',
         locales: {
@@ -82,7 +84,7 @@ export default defineConfig({
                 lang: 'tr'
             }
         }
-}), markdoc()],
+}), markdoc(), react()],
 
   vite: {
     plugins: [tailwindcss()],
