@@ -11,7 +11,7 @@ import react from "@astrojs/react";
 export default defineConfig({
     outDir: "docs",
     site: "https://stellayazilim.github.io/ergosfare.docs",
-    trailingSlash: "ignore",
+    trailingSlash: "never",
     base: "/ergosfare.docs",
     integrations: [starlight({
         
